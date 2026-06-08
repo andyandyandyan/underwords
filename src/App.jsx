@@ -361,9 +361,9 @@ export default function App() {
           <div onClick={()=>setShowHelp(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1.5rem",animation:"fadeUp 0.2s ease both",zIndex:100}}>
             <div onClick={e=>e.stopPropagation()} style={{background:"#161618",border:"1.5px solid #2e2e32",borderRadius:8,padding:"2rem 1.8rem",maxWidth:340,width:"100%",display:"flex",flexDirection:"column",gap:"1.2rem"}}>
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.5rem",fontWeight:900,fontStyle:"italic",color:"#f0ece4"}}>How to play</div>
-              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"#888",fontFamily:"'DM Mono',monospace"}}>The phrase you're about to see is hiding another phrase of identical length underneath it.</p>
-              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"#888",fontFamily:"'DM Mono',monospace"}}>Tap a tile to reveal what's beneath it. Green tiles are the same in both — they're free. Your score is the percentage of the puzzle you solved yourself — higher is better.</p>
-              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"#888",fontFamily:"'DM Mono',monospace"}}>Guess the hidden phrase anytime — but you only get three. Use them wisely.</p>
+              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"#888",fontFamily:"'DM Mono',monospace"}}>Lurking beneath the phrase you're about to see is a mystery phrase of equal length. Your job is to guess it.</p>
+              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"#888",fontFamily:"'DM Mono',monospace"}}>Each tile is a letter or a space. Tiles are green when they are the same in both phrases. Tap a tile to reveal one piece of the hidden phrase. Your score is the percentage of the puzzle you solved yourself — higher is better.</p>
+              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"#888",fontFamily:"'DM Mono',monospace"}}>Guess the hidden phrase anytime, but you only get three tries. Use them wisely.</p>
               <button onClick={()=>setShowHelp(false)} style={{background:"#c9a96e",border:"none",color:"#0e0e0f",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem",borderRadius:3,cursor:"pointer",fontWeight:500,marginTop:"0.4rem"}}>Play</button>
             </div>
           </div>
