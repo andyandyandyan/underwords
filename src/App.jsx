@@ -353,8 +353,10 @@ export default function App() {
         </div>
         )}
 
-        {/* ? button */}
-        <button onClick={()=>setShowHelp(true)} style={{position:"fixed",bottom:"1.2rem",right:"1.2rem",width:32,height:32,borderRadius:"50%",background:"transparent",border:"1.5px solid #2e2e32",color:"#444",fontFamily:"'DM Mono',monospace",fontSize:"0.75rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>?</button>
+        {/* ? button — only shown once game is started */}
+        {started && (
+          <button onClick={()=>setShowHelp(true)} style={{position:"fixed",bottom:"1.4rem",right:"1.4rem",width:38,height:38,borderRadius:"50%",background:"#1c1c1e",border:"1.5px solid #c9a96e",color:"#c9a96e",fontFamily:"'DM Mono',monospace",fontSize:"0.85rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 0 0 4px rgba(201,169,110,0.08)",transition:"box-shadow 0.15s"}} onMouseEnter={e=>e.currentTarget.style.boxShadow="0 0 0 6px rgba(201,169,110,0.18)"} onMouseLeave={e=>e.currentTarget.style.boxShadow="0 0 0 4px rgba(201,169,110,0.08)"}>?</button>
+        )}
 
         {/* Help modal */}
         {showHelp && (
@@ -364,7 +366,7 @@ export default function App() {
               <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"#888",fontFamily:"'DM Mono',monospace"}}>Lurking beneath the phrase you're about to see is a mystery phrase of equal length. Your job is to guess it.</p>
               <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"#888",fontFamily:"'DM Mono',monospace"}}>Each tile is a letter or a space. Tiles are green when they are the same in both phrases. Tap a tile to reveal one piece of the hidden phrase. Your score is the percentage of the puzzle you solved yourself — higher is better.</p>
               <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"#888",fontFamily:"'DM Mono',monospace"}}>Guess the hidden phrase anytime, but you only get three tries. Use them wisely.</p>
-              <button onClick={()=>setShowHelp(false)} style={{background:"#c9a96e",border:"none",color:"#0e0e0f",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem",borderRadius:3,cursor:"pointer",fontWeight:500,marginTop:"0.4rem"}}>Play</button>
+              <button onClick={()=>setShowHelp(false)} style={{background:"#c9a96e",border:"none",color:"#0e0e0f",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem",borderRadius:3,cursor:"pointer",fontWeight:500,marginTop:"0.4rem"}}>{started ? "Got it" : "Play"}</button>
             </div>
           </div>
         )}
