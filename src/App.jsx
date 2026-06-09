@@ -4,6 +4,13 @@ const MAX_ROWS = 7;
 const MIN_COLS = 6;
 const GAP      = 4;
 
+const HINT_IDS = new Set(
+  HIDDEN.split("").reduce((acc, ch, i) => {
+    if (ch !== " " && (i === 0 || HIDDEN[i - 1] === " ")) acc.push(i);
+    return acc;
+  }, [])
+);
+
 function calcLayout(surface) {
   const total = surface.length;
   const cols  = Math.max(MIN_COLS, Math.ceil(total / MAX_ROWS));
@@ -219,7 +226,7 @@ function TypingAnimation() {
   );
 }
 
-function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx }) {
+function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, showDogEar }) {
   const isSpace = tile.surfaceLetter === " ";
   const canClick = !tile.isShaded && !tile.isRevealed;
 
@@ -260,12 +267,24 @@ function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx }) {
         fontSize: size * 0.42,
         fontWeight: 500,
         userSelect: "none",
+        position: "relative",
+        overflow: "hidden",
         transition: "background 0.15s,border-color 0.15s,transform 0.12s,box-shadow 0.15s",
         boxShadow: isSelected ? "0 0 0 2px rgba(201,169,110,0.25)" : "none",
         transform: isSelected ? "translateY(-3px)" : "none",
         ...animStyle,
       }}
-    >{letter}</div>
+    >
+      {letter}
+      {showDogEar && (
+        <div style={{
+          position:"absolute", top:0, right:0,
+          width: Math.round(size * 0.28), height: Math.round(size * 0.28),
+          background:"#d63030",
+          clipPath:"polygon(100% 0%, 0% 0%, 100% 100%)",
+        }}/>
+      )}
+    </div>
   );
 }
 
@@ -282,6 +301,7 @@ export default function App() {
   const [message, setMessage]         = useState("");
   const [started, setStarted]         = useState(false);
   const [guessesLeft, setGuessesLeft] = useState(3);
+  const [hintUsed, setHintUsed]       = useState(false);
 
   const { cols } = calcLayout(SURFACE);
   const flipTiles      = tiles.filter(t => !t.isShaded);
@@ -334,7 +354,7 @@ export default function App() {
     setTiles(buildTiles(SURFACE, HIDDEN));
     setSelected(null); setGuess(""); setFinalScore(null);
     setWobble(false); setWon(false); setLost(false);
-    setWinFlipping(false); setMessage(""); setGuessesLeft(3); setStarted(false);
+    setWinFlipping(false); setMessage(""); setGuessesLeft(3); setStarted(false); setHintUsed(false);
   }
 
   return (
@@ -529,6 +549,7 @@ export default function App() {
                   size={tileSize}
                   isWinFlipping={winFlipping}
                   flipIdx={winFlipping ? flipTiles.findIndex(t => t.id === tile.id) : 0}
+                  showDogEar={hintUsed && HINT_IDS.has(tile.id)}
                 />
               ))}
             </div>
@@ -549,6 +570,13 @@ export default function App() {
           }}>
             {selected!==null ? "↓ Reveal selected tile" : "Select a tile to reveal"}
           </button>
+        )}
+
+        {/* Hint */}
+        {started && !won && !lost && (
+          hintUsed
+            ? <div style={{fontSize:"0.58rem",letterSpacing:"0.12em",textTransform:"uppercase",color:"var(--color-dim)",fontFamily:"'DM Mono',monospace"}}>First letters now shown.</div>
+            : <button onClick={() => setHintUsed(true)} style={{background:"transparent",border:"none",color:"var(--color-dim)",fontFamily:"'DM Mono',monospace",fontSize:"0.58rem",letterSpacing:"0.12em",textTransform:"uppercase",cursor:"pointer",padding:"0.1rem 0",textDecoration:"underline",textUnderlineOffset:"3px"}}>Need a hint?</button>
         )}
 
         {/* Guess / Lose */}
