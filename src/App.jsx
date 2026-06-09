@@ -76,10 +76,10 @@ function SlidingAnimation() {
   const palmTop = topPad;
   const pineTop = topPad + tileH + rowGap; // 38px
   const slideY  = pineTop - palmTop;       // 34px
-  const contH   = pineTop + tileH + 60; // 60px clearance below PINEAPPLE
+  const contH   = pineTop + tileH + rowGap; // one row-gap of clearance below PINEAPPLE
 
   return (
-    <div style={{ position:"relative", width:"100%", height: contH, flexShrink:0, marginBottom:"1rem" }}>
+    <div style={{ position:"relative", width:"100%", height: contH, flexShrink:0 }}>
       {/* Cover: fills y=0 to pineTop with modal bg, hides PINEAPPLE as it slides up */}
       <div style={{
         position:"absolute", top:0, left:0, right:0,
