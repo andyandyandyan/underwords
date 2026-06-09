@@ -279,7 +279,7 @@ function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, showDog
       {showDogEar && (
         <div style={{
           position:"absolute", top:0, right:0,
-          width: Math.round(size * 0.44), height: Math.round(size * 0.44),
+          width: Math.round(size * 0.28), height: Math.round(size * 0.28),
           background:"#d63030",
           clipPath:"polygon(100% 0%, 0% 0%, 100% 100%)",
         }}/>
@@ -514,19 +514,27 @@ export default function App() {
 
         {/* Score */}
         {started && !won && !lost && (
-          <div style={{display:"flex",alignItems:"center",gap:"1.6rem"}}>
-            <div style={{display:"flex",alignItems:"center",gap:"0.5rem",fontSize:"0.65rem",letterSpacing:"0.18em",color:"var(--color-score-label)",textTransform:"uppercase"}}>
-              Reveals: <span style={{fontFamily:"'Playfair Display'",fontSize:"1.3rem",fontWeight:700,color:"var(--color-accent)",letterSpacing:0}}>{currentScore}</span>
+          <div style={{display:"flex",alignItems:"center",width: tileSize * cols + GAP * (cols - 1)}}>
+            <div style={{display:"flex",alignItems:"center",gap:"1.6rem"}}>
+              <div style={{display:"flex",alignItems:"center",gap:"0.5rem",fontSize:"0.65rem",letterSpacing:"0.18em",color:"var(--color-score-label)",textTransform:"uppercase"}}>
+                Reveals: <span style={{fontFamily:"'Playfair Display'",fontSize:"1.3rem",fontWeight:700,color:"var(--color-accent)",letterSpacing:0}}>{currentScore}</span>
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:"6px"}}>
+                <span style={{fontSize:"0.6rem",letterSpacing:"0.12em",color:"var(--color-score-label)",textTransform:"uppercase",marginRight:2}}>Guesses left</span>
+                {[0,1,2].map(i => (
+                  <div key={i} style={{
+                    width:9, height:9, borderRadius:"50%",
+                    background: i < guessesLeft ? "var(--color-accent)" : "var(--border-inactive)",
+                    transition:"background 0.3s",
+                  }}/>
+                ))}
+              </div>
             </div>
-            <div style={{display:"flex",alignItems:"center",gap:"6px"}}>
-              <span style={{fontSize:"0.6rem",letterSpacing:"0.12em",color:"var(--color-score-label)",textTransform:"uppercase",marginRight:2}}>Guesses left</span>
-              {[0,1,2].map(i => (
-                <div key={i} style={{
-                  width:9, height:9, borderRadius:"50%",
-                  background: i < guessesLeft ? "var(--color-accent)" : "var(--border-inactive)",
-                  transition:"background 0.3s",
-                }}/>
-              ))}
+            <div style={{marginLeft:"auto"}}>
+              {hintUsed
+                ? <span style={{fontSize:"0.55rem",letterSpacing:"0.1em",textTransform:"uppercase",color:"#d63030",fontFamily:"'DM Mono',monospace"}}>First letters shown.</span>
+                : <button onClick={() => setHintUsed(true)} style={{background:"transparent",border:"none",color:"#d63030",fontFamily:"'DM Mono',monospace",fontSize:"0.55rem",letterSpacing:"0.1em",textTransform:"uppercase",cursor:"pointer",padding:0,textDecoration:"underline",textUnderlineOffset:"3px"}}>Need a hint?</button>
+              }
             </div>
           </div>
         )}
@@ -572,14 +580,8 @@ export default function App() {
           </button>
         )}
 
-        {/* Hint */}
-        {started && !won && !lost && (
-          hintUsed
-            ? <div style={{fontSize:"0.58rem",letterSpacing:"0.12em",textTransform:"uppercase",color:"var(--color-dim)",fontFamily:"'DM Mono',monospace"}}>First letters now shown.</div>
-            : <button onClick={() => setHintUsed(true)} style={{background:"transparent",border:"none",color:"var(--color-dim)",fontFamily:"'DM Mono',monospace",fontSize:"0.58rem",letterSpacing:"0.12em",textTransform:"uppercase",cursor:"pointer",padding:"0.1rem 0",textDecoration:"underline",textUnderlineOffset:"3px"}}>Need a hint?</button>
-        )}
 
-        {/* Guess / Lose */}
+{/* Guess / Lose */}
         {started && !won && (lost ? (
           <div style={{textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",gap:"1.2rem",animation:"fadeUp 0.5s ease both"}}>
             <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.8rem",fontStyle:"italic",color:"var(--color-lose)"}}>No more guesses.</div>
