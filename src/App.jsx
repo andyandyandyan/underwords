@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { SURFACE, HIDDEN, TITLE } from "./puzzle.js";
+import { SURFACE, HIDDEN, TITLE, DATE } from "./puzzle.js";
 const MAX_ROWS = 7;
 const MIN_COLS = 6;
 const GAP      = 4;
@@ -483,7 +483,7 @@ export default function App() {
             underwords
           </div>
           <div style={{fontFamily:"'DM Mono',monospace",fontSize:"clamp(1rem,4.5vw,1.5rem)",fontWeight:500,color:"var(--color-accent)",lineHeight:1.2,letterSpacing:"0.02em"}}>
-            "{TITLE}"
+            {DATE}: "{TITLE}"
           </div>
         </div>
 
@@ -516,11 +516,11 @@ export default function App() {
         {started && !won && !lost && (
           <div style={{display:"flex",alignItems:"center",width: tileSize * cols + GAP * (cols - 1)}}>
             <div style={{display:"flex",alignItems:"center",gap:"1.6rem"}}>
-              <div style={{display:"flex",alignItems:"center",gap:"0.5rem",fontSize:"0.65rem",letterSpacing:"0.18em",color:"var(--color-score-label)",textTransform:"uppercase"}}>
+              <div style={{display:"flex",alignItems:"center",gap:"0.5rem",fontSize:"0.72rem",letterSpacing:"0.18em",color:"var(--color-score-label)",textTransform:"uppercase"}}>
                 Reveals: <span style={{fontFamily:"'Playfair Display'",fontSize:"1.3rem",fontWeight:700,color:"var(--color-accent)",letterSpacing:0}}>{currentScore}</span>
               </div>
               <div style={{display:"flex",alignItems:"center",gap:"6px"}}>
-                <span style={{fontSize:"0.6rem",letterSpacing:"0.12em",color:"var(--color-score-label)",textTransform:"uppercase",marginRight:2}}>Guesses left</span>
+                <span style={{fontSize:"0.68rem",letterSpacing:"0.12em",color:"var(--color-score-label)",textTransform:"uppercase",marginRight:2}}>Guesses left</span>
                 {[0,1,2].map(i => (
                   <div key={i} style={{
                     width:9, height:9, borderRadius:"50%",
@@ -532,8 +532,8 @@ export default function App() {
             </div>
             <div style={{marginLeft:"auto"}}>
               {hintUsed
-                ? <span style={{fontSize:"0.55rem",letterSpacing:"0.1em",textTransform:"uppercase",color:"#d63030",fontFamily:"'DM Mono',monospace"}}>First letters shown.</span>
-                : <button onClick={() => setHintUsed(true)} style={{background:"transparent",border:"none",color:"#d63030",fontFamily:"'DM Mono',monospace",fontSize:"0.55rem",letterSpacing:"0.1em",textTransform:"uppercase",cursor:"pointer",padding:0,textDecoration:"underline",textUnderlineOffset:"3px"}}>Need a hint?</button>
+                ? <span style={{fontSize:"0.62rem",letterSpacing:"0.1em",textTransform:"uppercase",color:"#d63030",fontFamily:"'DM Mono',monospace"}}>First letters flagged.</span>
+                : <button onClick={() => setHintUsed(true)} style={{background:"transparent",border:"none",color:"#d63030",fontFamily:"'DM Mono',monospace",fontSize:"0.62rem",letterSpacing:"0.1em",textTransform:"uppercase",cursor:"pointer",padding:0,textDecoration:"underline",textUnderlineOffset:"3px"}}>Need a hint?</button>
               }
             </div>
           </div>
