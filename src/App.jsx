@@ -4,12 +4,6 @@ const MAX_ROWS = 7;
 const MIN_COLS = 6;
 const GAP      = 4;
 
-const HINT_IDS = new Set(
-  HIDDEN.split("").reduce((acc, ch, i) => {
-    if (ch !== " " && (i === 0 || HIDDEN[i - 1] === " ")) acc.push(i);
-    return acc;
-  }, [])
-);
 
 function calcLayout(surface) {
   const total = surface.length;
@@ -29,15 +23,15 @@ function buildTiles(surface, hidden) {
 }
 
 function calcScore(tiles) {
-  return tiles.filter(t => !t.isShaded && t.isRevealed).length;
+  return tiles.filter(t => !t.isShaded && t.isRevealed && t.hiddenLetter !== " ").length;
 }
 
-function getRating(reveals, total) {
+function getRating(reveals, budget) {
   if (reveals === 0) return "perfect";
-  const pct = reveals / total;
-  if (pct < 0.10) return "elite";
-  if (pct < 0.50) return "great";
-  if (pct < 0.75) return "nice";
+  const pct = reveals / budget;
+  if (pct <= 0.20) return "elite";
+  if (pct <= 0.50) return "great";
+  if (reveals < budget) return "good";
   return "phew";
 }
 
@@ -226,9 +220,9 @@ function TypingAnimation() {
   );
 }
 
-function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, showDogEar }) {
+function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocked }) {
   const isSpace = tile.surfaceLetter === " ";
-  const canClick = !tile.isShaded && !tile.isRevealed;
+  const canClick = !tile.isShaded && !tile.isRevealed && !isLocked;
 
   let bg, border, color, cursor;
   if (tile.isShaded) {
@@ -267,24 +261,13 @@ function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, showDog
         fontSize: size * 0.42,
         fontWeight: 500,
         userSelect: "none",
-        position: "relative",
-        overflow: "hidden",
-        transition: "background 0.15s,border-color 0.15s,transform 0.12s,box-shadow 0.15s",
+        opacity: isLocked && !tile.isShaded && !tile.isRevealed ? 0.38 : 1,
+        transition: "background 0.15s,border-color 0.15s,transform 0.12s,box-shadow 0.15s,opacity 0.15s",
         boxShadow: isSelected ? "0 0 0 2px rgba(201,169,110,0.25)" : "none",
         transform: isSelected ? "translateY(-3px)" : "none",
         ...animStyle,
       }}
-    >
-      {letter}
-      {showDogEar && (
-        <div style={{
-          position:"absolute", top:0, right:0,
-          width: Math.round(size * 0.28), height: Math.round(size * 0.28),
-          background:"#d63030",
-          clipPath:"polygon(100% 0%, 0% 0%, 100% 100%)",
-        }}/>
-      )}
-    </div>
+    >{letter}</div>
   );
 }
 
@@ -301,13 +284,16 @@ export default function App() {
   const [message, setMessage]         = useState("");
   const [started, setStarted]         = useState(false);
   const [guessesLeft, setGuessesLeft] = useState(3);
-  const [hintUsed, setHintUsed]       = useState(false);
-  const [shareCopied, setShareCopied] = useState(false);
+  const [hintUsed, setHintUsed]         = useState(false);
+  const [shareCopied, setShareCopied]   = useState(false);
+  const [lastRevealed, setLastRevealed] = useState(null);
 
   const { cols } = calcLayout(SURFACE);
-  const flipTiles      = tiles.filter(t => !t.isShaded);
-  const nonShadedCount = flipTiles.length;
-  const currentScore   = calcScore(tiles);
+  const completeRows  = Math.floor(SURFACE.length / cols);
+  const revealBudget  = completeRows * 2;
+  const flipTiles     = tiles.filter(t => !t.isShaded);
+  const currentScore  = calcScore(tiles);
+  const revealsLeft   = revealBudget - currentScore;
 
   const boardW   = Math.min(window.innerWidth * 0.88, 560);
   const tileSize = Math.floor((boardW - GAP * (cols - 1)) / cols);
@@ -318,14 +304,25 @@ export default function App() {
   }
 
   function handleTileClick(id) {
-    if (won || lost || winFlipping) return;
+    if (won || lost || winFlipping || revealsLeft === 0) return;
+    if (lastRevealed !== null && Math.abs(id - lastRevealed) === 1) return;
     setSelected(prev => prev === id ? null : id);
   }
 
   function confirmReveal() {
-    if (selected === null || won || lost || winFlipping) return;
+    if (selected === null || won || lost || winFlipping || revealsLeft === 0) return;
     setTiles(prev => prev.map(t => t.id === selected ? {...t, isRevealed: true} : t));
+    setLastRevealed(selected);
     setSelected(null);
+  }
+
+  function useHint() {
+    setTiles(prev => prev.map(t =>
+      !t.isShaded && !t.isRevealed && t.hiddenLetter === " "
+        ? { ...t, isRevealed: true }
+        : t
+    ));
+    setHintUsed(true);
   }
 
   function handleGuess() {
@@ -353,8 +350,8 @@ export default function App() {
 
   async function handleShare() {
     const revealText = finalScore === 0 ? "zero reveals" : `${finalScore} reveal${finalScore !== 1 ? "s" : ""}`;
-    const rating = getRating(finalScore, nonShadedCount);
-    const hint = hintUsed ? "\nhint taken" : "";
+    const rating = getRating(finalScore, revealBudget);
+    const hint = hintUsed ? "\nspaces revealed" : "";
     const text = `underwords — ${DATE}: "${TITLE}"\n${rating} · ${revealText}${hint}`;
     if (navigator.share) {
       try { await navigator.share({ text }); } catch {}
@@ -369,7 +366,7 @@ export default function App() {
     setTiles(buildTiles(SURFACE, HIDDEN));
     setSelected(null); setGuess(""); setFinalScore(null);
     setWobble(false); setWon(false); setLost(false);
-    setWinFlipping(false); setMessage(""); setGuessesLeft(3); setStarted(false); setHintUsed(false);
+    setWinFlipping(false); setMessage(""); setGuessesLeft(3); setStarted(false); setHintUsed(false); setLastRevealed(null);
   }
 
   return (
@@ -543,7 +540,7 @@ export default function App() {
           <div style={{display:"flex",alignItems:"center",width: tileSize * cols + GAP * (cols - 1)}}>
             <div style={{display:"flex",alignItems:"center",gap:"1.6rem"}}>
               <div style={{display:"flex",alignItems:"center",gap:"0.5rem",fontSize:"0.72rem",letterSpacing:"0.18em",color:"var(--color-score-label)",textTransform:"uppercase"}}>
-                Reveals: <span style={{fontFamily:"'Playfair Display'",fontSize:"1.3rem",fontWeight:700,color:"var(--color-accent)",letterSpacing:0}}>{currentScore}</span>
+                Reveals left: <span style={{fontFamily:"'Playfair Display'",fontSize:"1.3rem",fontWeight:700,color:"var(--color-accent)",letterSpacing:0}}>{revealsLeft}</span>
               </div>
               <div style={{display:"flex",alignItems:"center",gap:"6px"}}>
                 <span style={{fontSize:"0.68rem",letterSpacing:"0.12em",color:"var(--color-score-label)",textTransform:"uppercase",marginRight:2}}>Guesses left</span>
@@ -558,8 +555,8 @@ export default function App() {
             </div>
             <div style={{marginLeft:"auto",paddingLeft:"0.75rem"}}>
               {hintUsed
-                ? <span style={{fontSize:"0.62rem",letterSpacing:"0.1em",textTransform:"uppercase",color:"#d63030",fontFamily:"'DM Mono',monospace"}}>First letters flagged.</span>
-                : <button onClick={() => setHintUsed(true)} style={{background:"transparent",border:"none",color:"#d63030",fontFamily:"'DM Mono',monospace",fontSize:"0.62rem",letterSpacing:"0.1em",textTransform:"uppercase",cursor:"pointer",padding:0,textDecoration:"underline",textUnderlineOffset:"3px"}}>Need a hint?</button>
+                ? <span style={{fontSize:"0.62rem",letterSpacing:"0.1em",textTransform:"uppercase",color:"#d63030",fontFamily:"'DM Mono',monospace"}}>Spaces revealed.</span>
+                : <button onClick={useHint} style={{background:"transparent",border:"none",color:"#d63030",fontFamily:"'DM Mono',monospace",fontSize:"0.62rem",letterSpacing:"0.1em",textTransform:"uppercase",cursor:"pointer",padding:0,textDecoration:"underline",textUnderlineOffset:"3px"}}>Need a hint?</button>
               }
             </div>
           </div>
@@ -583,7 +580,7 @@ export default function App() {
                   size={tileSize}
                   isWinFlipping={winFlipping}
                   flipIdx={winFlipping ? flipTiles.findIndex(t => t.id === tile.id) : 0}
-                  showDogEar={hintUsed && HINT_IDS.has(tile.id)}
+                  isLocked={revealsLeft === 0 || (lastRevealed !== null && Math.abs(tile.id - lastRevealed) === 1)}
                 />
               ))}
             </div>
@@ -649,14 +646,14 @@ export default function App() {
                 You got it!
               </div>
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:"3.2rem",fontWeight:900,fontStyle:"italic",color:"var(--color-accent)",lineHeight:1,letterSpacing:"-0.01em"}}>
-                {getRating(finalScore, nonShadedCount)}
+                {getRating(finalScore, revealBudget)}
               </div>
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.4rem",fontWeight:700,color:"var(--color-page-title)",letterSpacing:"0.02em"}}>
                 {finalScore === 0 ? "zero reveals" : `${finalScore} reveal${finalScore !== 1 ? "s" : ""}`}
               </div>
               {hintUsed && (
                 <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.12em",textTransform:"uppercase",color:"var(--color-dim)"}}>
-                  hint taken
+                  spaces revealed
                 </div>
               )}
               <div style={{display:"flex",gap:"0.6rem",marginTop:"0.6rem"}}>
@@ -678,15 +675,15 @@ export default function App() {
 
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.5rem",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)"}}>How to play</div>
 
-              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>A phrase hides another underneath.</p>
+              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>One phrase hides another.</p>
 
               <SlidingAnimation/>
 
-              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>Green tiles are the same in both. Tap a tile to reveal one character of the hidden phrase.</p>
+              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>Green tiles are the same in both. Tap a tile to reveal one character of the hidden phrase, but you only get a limited number of reveals.</p>
 
               <TileRevealAnimation/>
 
-              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>Guess the hidden phrase anytime — but you only get three tries. Your score is the number of reveals you take, the lower the better.</p>
+              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>You have three tries to guess the hidden phrase. Need a hint? Just ask.</p>
 
               <TypingAnimation/>
 
