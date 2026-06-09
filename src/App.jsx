@@ -249,7 +249,7 @@ function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocke
 
   return (
     <div
-      onClick={canClick ? onClick : undefined}
+      onClick={!tile.isShaded && !tile.isRevealed ? onClick : undefined}
       className={canClick && !isSelected ? "tile-hover" : ""}
       style={{
         width: size, height: size * 1.15,
@@ -261,8 +261,7 @@ function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocke
         fontSize: size * 0.42,
         fontWeight: 500,
         userSelect: "none",
-        opacity: isLocked && !tile.isShaded && !tile.isRevealed ? 0.38 : 1,
-        transition: "background 0.15s,border-color 0.15s,transform 0.12s,box-shadow 0.15s,opacity 0.15s",
+        transition: "background 0.15s,border-color 0.15s,transform 0.12s,box-shadow 0.15s",
         boxShadow: isSelected ? "0 0 0 2px rgba(201,169,110,0.25)" : "none",
         transform: isSelected ? "translateY(-3px)" : "none",
         ...animStyle,
@@ -284,8 +283,9 @@ export default function App() {
   const [message, setMessage]         = useState("");
   const [started, setStarted]         = useState(false);
   const [guessesLeft, setGuessesLeft] = useState(3);
-  const [hintUsed, setHintUsed]       = useState(false);
-  const [shareCopied, setShareCopied] = useState(false);
+  const [hintUsed, setHintUsed]         = useState(false);
+  const [shareCopied, setShareCopied]   = useState(false);
+  const [lockedShake, setLockedShake]   = useState(false);
 
   const { cols } = calcLayout(SURFACE);
   const completeRows  = Math.floor(SURFACE.length / cols);
@@ -303,7 +303,17 @@ export default function App() {
   }
 
   function handleTileClick(id) {
-    if (won || lost || winFlipping || revealsLeft === 0) return;
+    if (won || lost || winFlipping) return;
+    const adjacentRevealed = tiles.some(t =>
+      (t.id === id - 1 || t.id === id + 1) && t.isRevealed && !t.isShaded && t.hiddenLetter !== " "
+    );
+    if (adjacentRevealed) {
+      setLockedShake(true);
+      setMessage("You cannot reveal consecutive tiles.");
+      setTimeout(() => { setLockedShake(false); setMessage(""); }, 1000);
+      return;
+    }
+    if (revealsLeft === 0) return;
     setSelected(prev => prev === id ? null : id);
   }
 
@@ -363,7 +373,7 @@ export default function App() {
     setTiles(buildTiles(SURFACE, HIDDEN));
     setSelected(null); setGuess(""); setFinalScore(null);
     setWobble(false); setWon(false); setLost(false);
-    setWinFlipping(false); setMessage(""); setGuessesLeft(3); setStarted(false); setHintUsed(false);
+    setWinFlipping(false); setMessage(""); setGuessesLeft(3); setStarted(false); setHintUsed(false); setLockedShake(false);
   }
 
   return (
@@ -453,6 +463,10 @@ export default function App() {
           0%,100%{transform:translateX(0)} 15%{transform:translateX(-8px)}
           30%{transform:translateX(8px)} 45%{transform:translateX(-5px)}
           60%{transform:translateX(5px)} 75%{transform:translateX(-3px)} 90%{transform:translateX(3px)}
+        }
+        @keyframes shake {
+          0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)}
+          75%{transform:translateX(4px)}
         }
         @keyframes flipIn {
           0%{transform:rotateY(0)} 40%{transform:rotateY(90deg)}
@@ -564,7 +578,7 @@ export default function App() {
         <div style={{
           display:"flex", flexDirection:"column", alignItems:"flex-start",
           gap: GAP, width: tileSize * cols + GAP * (cols - 1),
-          animation: wobble ? "wobble 0.55s ease" : "none",
+          animation: wobble ? "wobble 0.55s ease" : lockedShake ? "shake 0.3s ease" : "none",
         }}>
           {rows.map((row, ri) => (
             <div key={ri} style={{display:"flex", gap: GAP}}>
