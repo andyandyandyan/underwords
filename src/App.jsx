@@ -358,7 +358,7 @@ export default function App() {
   async function handleShare() {
     const revealText = finalScore === 0 ? "zero reveals" : `${finalScore} reveal${finalScore !== 1 ? "s" : ""}`;
     const rating = getRating(finalScore, revealBudget);
-    const hint = hintUsed ? "\nspaces revealed" : "";
+    const hint = hintUsed ? "\nhint taken" : "";
     const text = `underwords — ${DATE}: "${TITLE}"\n${rating} · ${revealText}${hint}`;
     if (navigator.share) {
       try { await navigator.share({ text }); } catch {}
@@ -664,7 +664,7 @@ export default function App() {
               </div>
               {hintUsed && (
                 <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.12em",textTransform:"uppercase",color:"var(--color-dim)"}}>
-                  spaces revealed
+                  hint taken
                 </div>
               )}
               <div style={{display:"flex",gap:"0.6rem",marginTop:"0.6rem"}}>
