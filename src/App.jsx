@@ -279,7 +279,7 @@ function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, showDog
       {showDogEar && (
         <div style={{
           position:"absolute", top:0, right:0,
-          width: Math.round(size * 0.28), height: Math.round(size * 0.28),
+          width: Math.round(size * 0.44), height: Math.round(size * 0.44),
           background:"#d63030",
           clipPath:"polygon(100% 0%, 0% 0%, 100% 100%)",
         }}/>
@@ -415,22 +415,22 @@ export default function App() {
             --color-tile-default: #e8e2d6;
             --color-accent: #c9a96e;
             --color-page-title: #f0ece4;
-            --color-dim: #444444;
+            --color-dim: #777777;
             --bg-modal: #161618;
             --border-modal: #2e2e32;
             --color-modal-text: #888888;
             --bg-input: #1c1c1e;
             --border-input: #2e2e32;
             --color-input: #f0ece4;
-            --border-inactive: #2e2e32;
-            --color-inactive: #3a3a3f;
+            --border-inactive: #505058;
+            --color-inactive: #606068;
             --piechart-track: #2e2e32;
             --color-error: #884444;
             --color-lose: #884444;
             --bg-help-btn: #1c1c1e;
             --color-legend: #3a3a3f;
             --bg-overlay: rgba(0,0,0,0.75);
-            --color-score-label: #444444;
+            --color-score-label: #888888;
             --color-secondary-btn: #555555;
             --border-secondary-btn: #2e2e32;
             --color-subtitle: #444444;
