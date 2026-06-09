@@ -79,29 +79,29 @@ function SlidingAnimation() {
   const contH   = pineTop + tileH + 32; // generous bottom clearance
 
   return (
-    <div style={{ position:"relative", width:"100%", height: contH, overflow:"hidden" }}>
-      {/* Solid cover: hides PINEAPPLE as it enters the PALM TREE area */}
+    <div style={{ position:"relative", width:"100%", height: contH }}>
+      {/* Cover: fills y=0 to pineTop with modal bg, hides PINEAPPLE as it slides up */}
       <div style={{
-        position:"absolute", top: palmTop, left:0, right:0,
-        height: tileH + rowGap,
+        position:"absolute", top:0, left:0, right:0,
+        height: pineTop,
         background:"var(--bg-modal)",
         zIndex: 2,
       }}/>
-      {/* PALM TREE — above the cover */}
+      {/* PALM TREE — above the cover; bg fills inter-tile gaps */}
       <div style={{
         position:"absolute", top: palmTop, left:0, right:0,
         display:"flex", gap, justifyContent:"center",
         zIndex: 3,
+        background:"var(--bg-modal)",
       }}>
         {surf.split("").map((ch, i) => <MiniTile key={i} letter={ch} state="default" size={size}/>)}
       </div>
-      {/* PINEAPPLE — below cover, slides up behind it */}
+      {/* PINEAPPLE — slides up behind the cover */}
       <div style={{
         position:"absolute", top: pineTop, left:0, right:0,
         display:"flex", gap, justifyContent:"center",
         zIndex: 1,
-        animation:`demoSlideUnder 4s ease-in-out infinite`,
-        "--slide-y": `-${slideY}px`,
+        animation:"demoSlideUnder 4s ease-in-out infinite",
       }}>
         {hidn.split("").map((ch, i) => <MiniTile key={i} letter={ch} state="default" size={size}/>)}
       </div>
