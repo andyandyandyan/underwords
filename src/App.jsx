@@ -286,7 +286,8 @@ export default function App() {
   const [hintUsed, setHintUsed]         = useState(false);
   const [shareCopied, setShareCopied]   = useState(false);
   const [lockedShake, setLockedShake]   = useState(false);
-  const [dismissedWin, setDismissedWin] = useState(false);
+  const [dismissedWin, setDismissedWin]   = useState(false);
+  const [dismissedLoss, setDismissedLoss] = useState(false);
 
   const { cols } = calcLayout(SURFACE);
   const completeRows  = Math.floor(SURFACE.length / cols);
@@ -357,10 +358,14 @@ export default function App() {
   }
 
   async function handleShare() {
-    const revealText = finalScore === 0 ? "zero reveals" : `${finalScore} reveal${finalScore !== 1 ? "s" : ""}`;
-    const rating = getRating(finalScore, revealBudget);
     const hint = hintUsed ? "\nhint taken" : "";
-    const text = `underwords — ${DATE}: "${TITLE}"\n${rating} · ${revealText}${hint}`;
+    let text;
+    if (won) {
+      const revealText = finalScore === 0 ? "zero reveals" : `${finalScore} reveal${finalScore !== 1 ? "s" : ""}`;
+      text = `underwords — ${DATE}: "${TITLE}"\n${getRating(finalScore, revealBudget)} · ${revealText}${hint}`;
+    } else {
+      text = `underwords — ${DATE}: "${TITLE}"\nno luck${hint}`;
+    }
     if (navigator.share) {
       try { await navigator.share({ text }); } catch {}
     } else {
@@ -374,7 +379,7 @@ export default function App() {
     setTiles(buildTiles(SURFACE, HIDDEN));
     setSelected(null); setGuess(""); setFinalScore(null);
     setWobble(false); setWon(false); setLost(false);
-    setWinFlipping(false); setMessage(""); setGuessesLeft(3); setStarted(false); setHintUsed(false); setLockedShake(false); setDismissedWin(false);
+    setWinFlipping(false); setMessage(""); setGuessesLeft(3); setStarted(false); setHintUsed(false); setLockedShake(false); setDismissedWin(false); setDismissedLoss(false);
   }
 
   return (
@@ -616,19 +621,8 @@ export default function App() {
         )}
 
 
-{/* Guess / Lose */}
-        {started && !won && (lost ? (
-          <div style={{textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",gap:"1.2rem",animation:"fadeUp 0.5s ease both"}}>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.8rem",fontStyle:"italic",color:"var(--color-lose)"}}>No more guesses.</div>
-            <div style={{fontSize:"0.65rem",letterSpacing:"0.18em",color:"var(--color-dim)",textTransform:"uppercase"}}>The answer was</div>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(1.2rem,5vw,1.8rem)",fontWeight:700,color:"var(--color-page-title)",letterSpacing:"0.06em"}}>
-              {HIDDEN}
-            </div>
-            <button onClick={reset} style={{background:"transparent",border:`1.5px solid var(--border-secondary-btn)`,color:"var(--color-secondary-btn)",fontFamily:"'DM Mono'",fontSize:"0.6rem",letterSpacing:"0.2em",padding:"0.5rem 1.2rem",borderRadius:3,cursor:"pointer",textTransform:"uppercase",marginTop:"0.4rem"}}>
-              Try again
-            </button>
-          </div>
-        ) : (
+{/* Guess input */}
+        {started && !won && !lost && (
           <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.6rem",width: tileSize * cols + GAP * (cols - 1)}}>
             <div style={{display:"flex",gap:8,width:"100%"}}>
               <input value={guess} onChange={e=>setGuess(e.target.value)}
@@ -642,11 +636,11 @@ export default function App() {
             </div>
             <div style={{fontSize:"0.65rem",letterSpacing:"0.1em",color:"var(--color-error)",height:"1rem"}}>{message}</div>
           </div>
-        ))}
+        )}
 
 
-        {/* Play again after dismissed win */}
-        {won && dismissedWin && (
+        {/* Replay button after dismissed popup */}
+        {((won && dismissedWin) || (lost && dismissedLoss)) && (
           <button onClick={reset} style={{background:"transparent",border:`1.5px solid var(--border-secondary-btn)`,color:"var(--color-secondary-btn)",fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.5rem 1.4rem",borderRadius:3,cursor:"pointer",animation:"fadeUp 0.3s ease both"}}>
             New game
           </button>
@@ -655,6 +649,32 @@ export default function App() {
         {/* ? button */}
         {started && (
           <button onClick={()=>setShowHelp(true)} style={{position:"fixed",bottom:"1.4rem",right:"1.4rem",width:38,height:38,borderRadius:"50%",background:"var(--bg-help-btn)",border:"1.5px solid var(--color-accent)",color:"var(--color-accent)",fontFamily:"'DM Mono',monospace",fontSize:"0.85rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 0 0 4px rgba(201,169,110,0.08)",transition:"box-shadow 0.15s"}} onMouseEnter={e=>e.currentTarget.style.boxShadow="0 0 0 6px rgba(201,169,110,0.18)"} onMouseLeave={e=>e.currentTarget.style.boxShadow="0 0 0 4px rgba(201,169,110,0.08)"}>?</button>
+        )}
+
+        {/* Loss popup */}
+        {lost && !dismissedLoss && (
+          <div onClick={() => setDismissedLoss(true)} style={{position:"fixed",inset:0,background:"var(--bg-overlay)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1.5rem",zIndex:100,cursor:"pointer"}}>
+            <div onClick={e => e.stopPropagation()} style={{background:"var(--bg-modal)",border:`1.5px solid var(--border-modal)`,borderRadius:8,padding:"2.4rem 2rem",maxWidth:300,width:"100%",display:"flex",flexDirection:"column",alignItems:"center",gap:"0.8rem",textAlign:"center",animation:"fadeUp 0.35s ease both"}}>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:"0.95rem",fontStyle:"italic",color:"var(--color-dim)"}}>No more guesses.</div>
+              <div style={{fontSize:"0.6rem",letterSpacing:"0.18em",color:"var(--color-dim)",textTransform:"uppercase"}}>The answer was</div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.6rem",fontWeight:700,fontStyle:"italic",color:"var(--color-lose)",letterSpacing:"0.02em",lineHeight:1.2}}>
+                {HIDDEN}
+              </div>
+              {hintUsed && (
+                <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.12em",textTransform:"uppercase",color:"var(--color-dim)"}}>
+                  hint taken
+                </div>
+              )}
+              <div style={{display:"flex",gap:"0.6rem",marginTop:"0.6rem"}}>
+                <button onClick={handleShare} style={{background:"transparent",border:"1.5px solid var(--border-secondary-btn)",color:"var(--color-secondary-btn)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem 1.4rem",borderRadius:3,cursor:"pointer",fontWeight:500,transition:"all 0.15s"}}>
+                  {shareCopied ? "Copied!" : "Share"}
+                </button>
+                <button onClick={reset} style={{background:"var(--color-accent)",border:"none",color:"var(--bg-primary-btn-text)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem 1.4rem",borderRadius:3,cursor:"pointer",fontWeight:500}}>
+                  Try again
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Win popup */}
