@@ -76,10 +76,10 @@ function SlidingAnimation() {
   const palmTop = topPad;
   const pineTop = topPad + tileH + rowGap; // 38px
   const slideY  = pineTop - palmTop;       // 34px
-  const contH   = pineTop + tileH + 14; // extra bottom clearance
+  const contH   = pineTop + tileH + 32; // generous bottom clearance
 
   return (
-    <div style={{ position:"relative", width:"100%", height: contH }}>
+    <div style={{ position:"relative", width:"100%", height: contH, overflow:"hidden" }}>
       {/* Solid cover: hides PINEAPPLE as it enters the PALM TREE area */}
       <div style={{
         position:"absolute", top: palmTop, left:0, right:0,
