@@ -220,9 +220,10 @@ function TypingAnimation() {
   );
 }
 
-function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocked }) {
+function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocked, showHidden }) {
   const isSpace = tile.surfaceLetter === " ";
-  const canClick = !tile.isShaded && !tile.isRevealed && !isLocked;
+  const frozenLoss = showHidden && !tile.isShaded && !tile.isRevealed;
+  const canClick = !tile.isShaded && !tile.isRevealed && !isLocked && !showHidden;
 
   let bg, border, color, cursor;
   if (tile.isShaded) {
@@ -232,6 +233,9 @@ function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocke
     bg = isSpace ? "var(--bg-tile-revealed-space)" : "var(--bg-tile-revealed)";
     border = isSelected ? "var(--color-accent)" : "var(--border-tile-revealed)";
     color = "var(--color-tile-revealed)"; cursor = "default";
+  } else if (frozenLoss) {
+    bg = "var(--bg-tile-default)"; border = "var(--border-tile-default)";
+    color = "var(--color-page-title)"; cursor = "default";
   } else {
     bg = isSelected ? "var(--bg-tile-selected)" : "var(--bg-tile-default)";
     border = isSelected ? "var(--color-accent)" : "var(--border-tile-default)";
@@ -243,7 +247,7 @@ function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocke
     animationDelay: `${flipIdx * 80}ms`,
   } : {};
 
-  const letter = tile.isRevealed
+  const letter = (tile.isRevealed || frozenLoss)
     ? (tile.hiddenLetter === " " ? "" : tile.hiddenLetter)
     : (tile.surfaceLetter === " " ? "" : tile.surfaceLetter);
 
@@ -598,6 +602,7 @@ export default function App() {
                   isWinFlipping={winFlipping}
                   flipIdx={winFlipping ? flipTiles.findIndex(t => t.id === tile.id) : 0}
                   isLocked={revealsLeft === 0 || tiles.some(t => (t.id === tile.id - 1 || t.id === tile.id + 1) && t.isRevealed && !t.isShaded && t.hiddenLetter !== " ")}
+                  showHidden={lost && dismissedLoss}
                 />
               ))}
             </div>
@@ -718,7 +723,7 @@ export default function App() {
 
               <SlidingAnimation/>
 
-              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>Green tiles are the same in both. Tap a tile to reveal one character of the hidden phrase, but choose wisely. You only get a limited number of reveals, and no two can be right next to each other.</p>
+              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>Green tiles are the same in both. Tap a tile to reveal one character of the hidden phrase, but choose wisely. You only get a limited number of reveals, and no two can touch.</p>
 
               <TileRevealAnimation/>
 
