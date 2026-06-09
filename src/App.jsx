@@ -433,8 +433,8 @@ export default function App() {
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(1.8rem,8vw,2.6rem)",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)",lineHeight:1,marginBottom:"0.5rem"}}>
             underwords
           </div>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(1.4rem,6vw,2.2rem)",fontWeight:700,fontStyle:"italic",color:"var(--color-accent)",lineHeight:1.1}}>
-            {TITLE}
+          <div style={{fontFamily:"'DM Mono',monospace",fontSize:"clamp(1rem,4.5vw,1.5rem)",fontWeight:500,color:"var(--color-accent)",lineHeight:1.2,letterSpacing:"0.02em"}}>
+            "{TITLE}"
           </div>
         </div>
 
@@ -581,7 +581,7 @@ export default function App() {
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:"3.2rem",fontWeight:900,fontStyle:"italic",color:"var(--color-accent)",lineHeight:1,letterSpacing:"-0.01em"}}>
                 {getRating(finalScore, nonShadedCount)}
               </div>
-              <div style={{fontSize:"0.65rem",letterSpacing:"0.18em",color:"var(--color-score-label)",textTransform:"uppercase"}}>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.4rem",fontWeight:700,color:"var(--color-page-title)",letterSpacing:"0.02em"}}>
                 {finalScore === 0 ? "zero reveals" : `${finalScore} reveal${finalScore !== 1 ? "s" : ""}`}
               </div>
               <button onClick={reset} style={{background:"var(--color-accent)",border:"none",color:"var(--bg-primary-btn-text)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem 2rem",borderRadius:3,cursor:"pointer",fontWeight:500,marginTop:"0.6rem"}}>
