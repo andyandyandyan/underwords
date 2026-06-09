@@ -76,7 +76,7 @@ function SlidingAnimation() {
   const palmTop = topPad;
   const pineTop = topPad + tileH + rowGap; // 38px
   const slideY  = pineTop - palmTop;       // 34px
-  const contH   = pineTop + tileH + topPad; // 68px
+  const contH   = pineTop + tileH + 14; // extra bottom clearance
 
   return (
     <div style={{ position:"relative", width:"100%", height: contH }}>
