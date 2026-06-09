@@ -1,3 +1,3 @@
-export const SURFACE = "STOP DROP AND ROLL";
-export const HIDDEN  = "FORGIVE AND FORGET";
+export const SURFACE = "FORGIVE AND FORGET";
+export const HIDDEN  = "STOP DROP AND ROLL";
 export const TITLE   = "how to stay cool";
