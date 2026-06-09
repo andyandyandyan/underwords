@@ -64,18 +64,45 @@ function MiniTile({ letter, state, size, animating }) {
   );
 }
 
-// Animation 1: PINEAPPLE slides up under PALM TREE
+// Animation 1: PINEAPPLE slides up under PALM TREE (no fade — covered by z-index)
 function SlidingAnimation() {
-  const surf = "PALM TREE";
-  const hidn = "PINEAPPLE";
-  const size = 23;
-  const gap = 2;
+  const surf   = "PALM TREE";
+  const hidn   = "PINEAPPLE";
+  const size   = 23;
+  const gap    = 2;
+  const tileH  = Math.round(size * 1.15); // 26px
+  const rowGap = 8;
+  const topPad = 4;
+  const palmTop = topPad;
+  const pineTop = topPad + tileH + rowGap; // 38px
+  const slideY  = pineTop - palmTop;       // 34px
+  const contH   = pineTop + tileH + topPad; // 68px
+
   return (
-    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
-      <div style={{ display:"flex", gap }}>
+    <div style={{ position:"relative", width:"100%", height: contH }}>
+      {/* Solid cover: hides PINEAPPLE as it enters the PALM TREE area */}
+      <div style={{
+        position:"absolute", top: palmTop, left:0, right:0,
+        height: tileH + rowGap,
+        background:"var(--bg-modal)",
+        zIndex: 2,
+      }}/>
+      {/* PALM TREE — above the cover */}
+      <div style={{
+        position:"absolute", top: palmTop, left:0, right:0,
+        display:"flex", gap, justifyContent:"center",
+        zIndex: 3,
+      }}>
         {surf.split("").map((ch, i) => <MiniTile key={i} letter={ch} state="default" size={size}/>)}
       </div>
-      <div style={{ display:"flex", gap, animation:"demoSlideUnder 3.6s ease-in-out infinite" }}>
+      {/* PINEAPPLE — below cover, slides up behind it */}
+      <div style={{
+        position:"absolute", top: pineTop, left:0, right:0,
+        display:"flex", gap, justifyContent:"center",
+        zIndex: 1,
+        animation:`demoSlideUnder 4s ease-in-out infinite`,
+        "--slide-y": `-${slideY}px`,
+      }}>
         {hidn.split("").map((ch, i) => <MiniTile key={i} letter={ch} state="default" size={size}/>)}
       </div>
     </div>
@@ -406,12 +433,14 @@ export default function App() {
           from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)}
         }
         @keyframes demoSlideUnder {
-          0%   { transform:translateY(0);    opacity:1; }
-          28%  { transform:translateY(0);    opacity:1; }
-          52%  { transform:translateY(-34px);opacity:0; }
-          72%  { transform:translateY(-34px);opacity:0; }
-          82%  { transform:translateY(0);    opacity:0; }
-          100% { transform:translateY(0);    opacity:1; }
+          0%    { transform:translateY(0);    opacity:1; }
+          28%   { transform:translateY(0);    opacity:1; }
+          52%   { transform:translateY(-34px);opacity:1; }
+          67%   { transform:translateY(-34px);opacity:1; }
+          68%   { transform:translateY(-34px);opacity:0; }
+          69%   { transform:translateY(0);    opacity:0; }
+          85%   { transform:translateY(0);    opacity:0; }
+          100%  { transform:translateY(0);    opacity:1; }
         }
         @keyframes demoBlink {
           50% { opacity:0; }
