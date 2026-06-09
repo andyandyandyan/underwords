@@ -284,9 +284,8 @@ export default function App() {
   const [message, setMessage]         = useState("");
   const [started, setStarted]         = useState(false);
   const [guessesLeft, setGuessesLeft] = useState(3);
-  const [hintUsed, setHintUsed]         = useState(false);
-  const [shareCopied, setShareCopied]   = useState(false);
-  const [lastRevealed, setLastRevealed] = useState(null);
+  const [hintUsed, setHintUsed]       = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   const { cols } = calcLayout(SURFACE);
   const completeRows  = Math.floor(SURFACE.length / cols);
@@ -305,14 +304,12 @@ export default function App() {
 
   function handleTileClick(id) {
     if (won || lost || winFlipping || revealsLeft === 0) return;
-    if (lastRevealed !== null && Math.abs(id - lastRevealed) === 1) return;
     setSelected(prev => prev === id ? null : id);
   }
 
   function confirmReveal() {
     if (selected === null || won || lost || winFlipping || revealsLeft === 0) return;
     setTiles(prev => prev.map(t => t.id === selected ? {...t, isRevealed: true} : t));
-    setLastRevealed(selected);
     setSelected(null);
   }
 
@@ -366,7 +363,7 @@ export default function App() {
     setTiles(buildTiles(SURFACE, HIDDEN));
     setSelected(null); setGuess(""); setFinalScore(null);
     setWobble(false); setWon(false); setLost(false);
-    setWinFlipping(false); setMessage(""); setGuessesLeft(3); setStarted(false); setHintUsed(false); setLastRevealed(null);
+    setWinFlipping(false); setMessage(""); setGuessesLeft(3); setStarted(false); setHintUsed(false);
   }
 
   return (
@@ -580,7 +577,7 @@ export default function App() {
                   size={tileSize}
                   isWinFlipping={winFlipping}
                   flipIdx={winFlipping ? flipTiles.findIndex(t => t.id === tile.id) : 0}
-                  isLocked={revealsLeft === 0 || (lastRevealed !== null && Math.abs(tile.id - lastRevealed) === 1)}
+                  isLocked={revealsLeft === 0 || tiles.some(t => (t.id === tile.id - 1 || t.id === tile.id + 1) && t.isRevealed && !t.isShaded && t.hiddenLetter !== " ")}
                 />
               ))}
             </div>
@@ -679,11 +676,11 @@ export default function App() {
 
               <SlidingAnimation/>
 
-              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>Green tiles are the same in both. Tap a tile to reveal one character of the hidden phrase, but you only get a limited number of reveals.</p>
+              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>Green tiles are the same in both. Tap a tile to reveal one character of the hidden phrase, but choose wisely. You only get a limited number of reveals, and no two can be right next to each other.</p>
 
               <TileRevealAnimation/>
 
-              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>You have three tries to guess the hidden phrase. Need a hint? Just ask.</p>
+              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>You have three tries to guess the hidden phrase.</p>
 
               <TypingAnimation/>
 
