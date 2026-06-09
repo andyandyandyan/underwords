@@ -550,21 +550,6 @@ export default function App() {
           </div>
         ))}
 
-        {/* Legend */}
-        {started && !lost && (
-        <div style={{display:"flex",gap:"1.2rem",fontSize:"0.55rem",letterSpacing:"0.1em",color:"var(--color-legend)",textTransform:"uppercase"}}>
-          {[
-            {bg:"var(--bg-tile-shaded)",border:"var(--border-tile-shaded)",label:"same in both"},
-            {bg:"var(--bg-tile-revealed)",border:"var(--border-tile-revealed)",label:"revealed"},
-            {bg:"var(--bg-tile-default)",border:"var(--border-tile-default)",label:"tap to reveal"},
-          ].map(({bg,border,label})=>(
-            <div key={label} style={{display:"flex",alignItems:"center",gap:5}}>
-              <div style={{width:9,height:9,borderRadius:2,background:bg,border:`1px solid ${border}`,flexShrink:0}}/>
-              {label}
-            </div>
-          ))}
-        </div>
-        )}
 
         {/* ? button */}
         {started && (
