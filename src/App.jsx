@@ -302,6 +302,7 @@ export default function App() {
   const [started, setStarted]         = useState(false);
   const [guessesLeft, setGuessesLeft] = useState(3);
   const [hintUsed, setHintUsed]       = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   const { cols } = calcLayout(SURFACE);
   const flipTiles      = tiles.filter(t => !t.isShaded);
@@ -348,6 +349,20 @@ export default function App() {
       }
     }
     setGuess("");
+  }
+
+  async function handleShare() {
+    const revealText = finalScore === 0 ? "zero reveals" : `${finalScore} reveal${finalScore !== 1 ? "s" : ""}`;
+    const rating = getRating(finalScore, nonShadedCount);
+    const hint = hintUsed ? "\nhint taken" : "";
+    const text = `underwords — ${DATE}: "${TITLE}"\n${rating} · ${revealText}${hint}`;
+    if (navigator.share) {
+      try { await navigator.share({ text }); } catch {}
+    } else {
+      await navigator.clipboard.writeText(text);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    }
   }
 
   function reset() {
@@ -478,21 +493,23 @@ export default function App() {
       }}>
 
         {/* Header */}
-        <div style={{textAlign:"center", padding:"0 1rem"}}>
-          {!started && (
+        {!started ? (
+          <div style={{textAlign:"center", padding:"0 1rem"}}>
             <div style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(1.8rem,8vw,2.6rem)",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)",lineHeight:1,marginBottom:"0.5rem"}}>
               underwords
             </div>
-          )}
-          <div style={{fontFamily:"'DM Mono',monospace",fontSize:"clamp(1rem,4.5vw,1.5rem)",fontWeight:500,color:"var(--color-accent)",lineHeight:1.2,letterSpacing:"0.02em"}}>
-            {DATE}: "{TITLE}"
+            <div style={{fontFamily:"'DM Mono',monospace",fontSize:"clamp(1rem,4.5vw,1.5rem)",fontWeight:500,color:"var(--color-accent)",lineHeight:1.2,letterSpacing:"0.02em"}}>
+              {DATE}: "{TITLE}"
+            </div>
           </div>
-        </div>
-
-        {/* Brand mark during gameplay */}
-        {started && (
-          <div style={{position:"fixed",top:"1rem",right:"1.2rem",fontFamily:"'Playfair Display',serif",fontSize:"0.95rem",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)",opacity:0.5,pointerEvents:"none",userSelect:"none",zIndex:10}}>
-            underwords
+        ) : (
+          <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",width: tileSize * cols + GAP * (cols - 1)}}>
+            <div style={{fontFamily:"'DM Mono',monospace",fontSize:"clamp(0.72rem,3.2vw,0.9rem)",fontWeight:500,color:"var(--color-accent)",letterSpacing:"0.02em",flexShrink:1,minWidth:0}}>
+              {DATE}: "{TITLE}"
+            </div>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(0.72rem,3.2vw,0.9rem)",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)",opacity:0.45,userSelect:"none",flexShrink:0,marginLeft:"1rem"}}>
+              underwords
+            </div>
           </div>
         )}
 
@@ -539,7 +556,7 @@ export default function App() {
                 ))}
               </div>
             </div>
-            <div style={{marginLeft:"auto"}}>
+            <div style={{marginLeft:"auto",paddingLeft:"0.75rem"}}>
               {hintUsed
                 ? <span style={{fontSize:"0.62rem",letterSpacing:"0.1em",textTransform:"uppercase",color:"#d63030",fontFamily:"'DM Mono',monospace"}}>First letters flagged.</span>
                 : <button onClick={() => setHintUsed(true)} style={{background:"transparent",border:"none",color:"#d63030",fontFamily:"'DM Mono',monospace",fontSize:"0.62rem",letterSpacing:"0.1em",textTransform:"uppercase",cursor:"pointer",padding:0,textDecoration:"underline",textUnderlineOffset:"3px"}}>Need a hint?</button>
@@ -642,9 +659,14 @@ export default function App() {
                   hint taken
                 </div>
               )}
-              <button onClick={reset} style={{background:"var(--color-accent)",border:"none",color:"var(--bg-primary-btn-text)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem 2rem",borderRadius:3,cursor:"pointer",fontWeight:500,marginTop:"0.6rem"}}>
-                Play again
-              </button>
+              <div style={{display:"flex",gap:"0.6rem",marginTop:"0.6rem"}}>
+                <button onClick={handleShare} style={{background:"transparent",border:"1.5px solid var(--border-secondary-btn)",color:"var(--color-secondary-btn)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem 1.4rem",borderRadius:3,cursor:"pointer",fontWeight:500,transition:"all 0.15s"}}>
+                  {shareCopied ? "Copied!" : "Share"}
+                </button>
+                <button onClick={reset} style={{background:"var(--color-accent)",border:"none",color:"var(--bg-primary-btn-text)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem 1.4rem",borderRadius:3,cursor:"pointer",fontWeight:500}}>
+                  Play again
+                </button>
+              </div>
             </div>
           </div>
         )}
