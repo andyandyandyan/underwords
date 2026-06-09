@@ -25,18 +25,13 @@ function calcScore(tiles) {
   return tiles.filter(t => !t.isShaded && t.isRevealed).length;
 }
 
-function PieChart({ reveals, total }) {
-  const color = reveals === 0 ? "#6dbf6d" : "#c9a96e";
-  const pct = total > 0 ? reveals / total : 0;
-  const r = 14, cx = 18, cy = 18, circ = 2 * Math.PI * r;
-  return (
-    <svg width={36} height={36} style={{transform:"rotate(-90deg)",flexShrink:0}}>
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--piechart-track)" strokeWidth={4}/>
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth={4}
-        strokeDasharray={`${pct*circ} ${circ}`} strokeLinecap="round"
-        style={{transition:"stroke-dasharray 0.4s ease, stroke 0.4s ease"}}/>
-    </svg>
-  );
+function getRating(reveals, total) {
+  if (reveals === 0) return "perfect";
+  const pct = reveals / total;
+  if (pct < 0.10) return "elite";
+  if (pct < 0.50) return "great";
+  if (pct < 0.75) return "nice";
+  return "phew";
 }
 
 function MiniTile({ letter, state, size, animating }) {
@@ -92,13 +87,13 @@ function TileRevealAnimation() {
   const surf   = "PALM TREE";
   const hidn   = "PINEAPPLE";
   const SHADED = new Set([0, 8]);
-  const SEQ    = [3, 5]; // M→E and T→P
+  const SEQ    = [3, 5];
   const size   = 23;
   const gap    = 2;
 
-  const [selected,    setSelected]    = useState(null);
-  const [revealed,    setRevealed]    = useState(new Set());
-  const [justRevealed,setJustRevealed]= useState(null);
+  const [selected,     setSelected]     = useState(null);
+  const [revealed,     setRevealed]     = useState(new Set());
+  const [justRevealed, setJustRevealed] = useState(null);
 
   useEffect(() => {
     const ids = [];
@@ -124,7 +119,7 @@ function TileRevealAnimation() {
     <div style={{ display:"flex", gap, justifyContent:"center" }}>
       {surf.split("").map((ch, i) => {
         let state = "default";
-        if (SHADED.has(i))   state = "shaded";
+        if (SHADED.has(i))        state = "shaded";
         else if (revealed.has(i)) state = "revealed";
         else if (selected === i)  state = "selected";
         return (
@@ -315,10 +310,6 @@ export default function App() {
     setWinFlipping(false); setMessage(""); setGuessesLeft(3); setStarted(false);
   }
 
-  const finalLabel = finalScore === 0
-    ? "No reveals needed"
-    : `${finalScore} reveal${finalScore !== 1 ? "s" : ""}`;
-
   return (
     <>
       <style>{`
@@ -439,29 +430,23 @@ export default function App() {
 
         {/* Header */}
         <div style={{textAlign:"center", padding:"0 1rem"}}>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(1.8rem,8vw,2.6rem)",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)",lineHeight:1,marginBottom:"0.6rem"}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(1.8rem,8vw,2.6rem)",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)",lineHeight:1,marginBottom:"0.5rem"}}>
             underwords
           </div>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(0.9rem,4vw,1.3rem)",fontWeight:700,color:"var(--color-accent)",letterSpacing:"0.08em",textTransform:"uppercase"}}>
-            "{TITLE}"
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(1.4rem,6vw,2.2rem)",fontWeight:700,fontStyle:"italic",color:"var(--color-accent)",lineHeight:1.1}}>
+            {TITLE}
           </div>
         </div>
 
-        {/* Pre-game */}
+        {/* Pre-game: phrase in tile form */}
         {!started && !showHelp && (
-          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"2rem",animation:"fadeUp 0.4s ease both",padding:"0 1rem",textAlign:"center"}}>
-            <div style={{
-              fontFamily:"'Playfair Display',serif",
-              fontSize:"clamp(1.4rem,6vw,2.2rem)",
-              fontWeight:700,
-              color:"var(--color-page-title)",
-              lineHeight:1.3,
-              letterSpacing:"0.04em",
-            }}>
-              {SURFACE}
-            </div>
-            <div style={{fontSize:"0.65rem",letterSpacing:"0.18em",color:"var(--color-subtitle)",textTransform:"uppercase"}}>
-              Something is hiding underneath
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"2rem",animation:"fadeUp 0.4s ease both",padding:"0 1rem"}}>
+            <div style={{display:"flex",flexWrap:"wrap",gap:4,justifyContent:"center"}}>
+              {SURFACE.split("").map((ch, i) =>
+                ch === " "
+                  ? <div key={i} style={{width:14}}/>
+                  : <MiniTile key={i} letter={ch} state="default" size={34}/>
+              )}
             </div>
             <button
               onClick={() => setStarted(true)}
@@ -480,17 +465,15 @@ export default function App() {
 
         {/* Score */}
         {started && !won && !lost && (
-          <div style={{display:"flex",alignItems:"center",gap:"1.2rem"}}>
-            <div style={{display:"flex",alignItems:"center",gap:"0.8rem"}}>
-              <PieChart reveals={currentScore} total={nonShadedCount}/>
-              <div style={{display:"flex",alignItems:"center",gap:"0.5rem",fontSize:"0.65rem",letterSpacing:"0.18em",color:"var(--color-score-label)",textTransform:"uppercase"}}>
-                Reveals: <span style={{fontFamily:"'Playfair Display'",fontSize:"1.3rem",fontWeight:700,color:"var(--color-accent)",letterSpacing:0}}>{currentScore}</span>
-              </div>
+          <div style={{display:"flex",alignItems:"center",gap:"1.6rem"}}>
+            <div style={{display:"flex",alignItems:"center",gap:"0.5rem",fontSize:"0.65rem",letterSpacing:"0.18em",color:"var(--color-score-label)",textTransform:"uppercase"}}>
+              Reveals: <span style={{fontFamily:"'Playfair Display'",fontSize:"1.3rem",fontWeight:700,color:"var(--color-accent)",letterSpacing:0}}>{currentScore}</span>
             </div>
-            <div style={{display:"flex",gap:"6px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:"6px"}}>
+              <span style={{fontSize:"0.6rem",letterSpacing:"0.12em",color:"var(--color-score-label)",textTransform:"uppercase",marginRight:2}}>Guesses left</span>
               {[0,1,2].map(i => (
                 <div key={i} style={{
-                  width:10, height:10, borderRadius:"50%",
+                  width:9, height:9, borderRadius:"50%",
                   background: i < guessesLeft ? "var(--color-accent)" : "var(--border-inactive)",
                   transition:"background 0.3s",
                 }}/>
@@ -539,21 +522,8 @@ export default function App() {
           </button>
         )}
 
-        {/* Guess / Win / Lose */}
-        {started && (won ? (
-          <div style={{textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",gap:"1rem",animation:"fadeUp 0.5s ease both"}}>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.8rem",fontStyle:"italic",color:"var(--color-page-title)"}}>You got it!</div>
-            <div style={{display:"flex",alignItems:"center",gap:"0.8rem"}}>
-              <PieChart reveals={finalScore} total={nonShadedCount}/>
-              <div style={{fontSize:"0.65rem",letterSpacing:"0.2em",color:"var(--color-score-label)",textTransform:"uppercase"}}>
-                {finalLabel}
-              </div>
-            </div>
-            <button onClick={reset} style={{background:"transparent",border:`1.5px solid var(--border-secondary-btn)`,color:"var(--color-secondary-btn)",fontFamily:"'DM Mono'",fontSize:"0.6rem",letterSpacing:"0.2em",padding:"0.5rem 1.2rem",borderRadius:3,cursor:"pointer",textTransform:"uppercase"}}>
-              Play again
-            </button>
-          </div>
-        ) : lost ? (
+        {/* Guess / Lose */}
+        {started && !won && (lost ? (
           <div style={{textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",gap:"1.2rem",animation:"fadeUp 0.5s ease both"}}>
             <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.8rem",fontStyle:"italic",color:"var(--color-lose)"}}>No more guesses.</div>
             <div style={{fontSize:"0.65rem",letterSpacing:"0.18em",color:"var(--color-dim)",textTransform:"uppercase"}}>The answer was</div>
@@ -599,6 +569,26 @@ export default function App() {
         {/* ? button */}
         {started && (
           <button onClick={()=>setShowHelp(true)} style={{position:"fixed",bottom:"1.4rem",right:"1.4rem",width:38,height:38,borderRadius:"50%",background:"var(--bg-help-btn)",border:"1.5px solid var(--color-accent)",color:"var(--color-accent)",fontFamily:"'DM Mono',monospace",fontSize:"0.85rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 0 0 4px rgba(201,169,110,0.08)",transition:"box-shadow 0.15s"}} onMouseEnter={e=>e.currentTarget.style.boxShadow="0 0 0 6px rgba(201,169,110,0.18)"} onMouseLeave={e=>e.currentTarget.style.boxShadow="0 0 0 4px rgba(201,169,110,0.08)"}>?</button>
+        )}
+
+        {/* Win popup */}
+        {won && finalScore !== null && (
+          <div style={{position:"fixed",inset:0,background:"var(--bg-overlay)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1.5rem",zIndex:100}}>
+            <div style={{background:"var(--bg-modal)",border:`1.5px solid var(--border-modal)`,borderRadius:8,padding:"2.4rem 2rem",maxWidth:300,width:"100%",display:"flex",flexDirection:"column",alignItems:"center",gap:"0.8rem",textAlign:"center",animation:"fadeUp 0.35s ease both"}}>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:"0.95rem",fontStyle:"italic",color:"var(--color-dim)"}}>
+                You got it!
+              </div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:"3.2rem",fontWeight:900,fontStyle:"italic",color:"var(--color-accent)",lineHeight:1,letterSpacing:"-0.01em"}}>
+                {getRating(finalScore, nonShadedCount)}
+              </div>
+              <div style={{fontSize:"0.65rem",letterSpacing:"0.18em",color:"var(--color-score-label)",textTransform:"uppercase"}}>
+                {finalScore === 0 ? "zero reveals" : `${finalScore} reveal${finalScore !== 1 ? "s" : ""}`}
+              </div>
+              <button onClick={reset} style={{background:"var(--color-accent)",border:"none",color:"var(--bg-primary-btn-text)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem 2rem",borderRadius:3,cursor:"pointer",fontWeight:500,marginTop:"0.6rem"}}>
+                Play again
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Help modal */}
