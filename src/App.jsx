@@ -293,7 +293,7 @@ export default function App() {
   const revealBudget  = completeRows * 2;
   const flipTiles     = tiles.filter(t => !t.isShaded);
   const currentScore  = calcScore(tiles);
-  const revealsLeft   = revealBudget - currentScore;
+  const revealsLeft   = finalScore !== null ? revealBudget - finalScore : revealBudget - currentScore;
 
   const boardW   = Math.min(window.innerWidth * 0.88, 560);
   const tileSize = Math.floor((boardW - GAP * (cols - 1)) / cols);
