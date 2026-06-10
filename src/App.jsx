@@ -283,7 +283,6 @@ export default function App() {
   const [showHelp, setShowHelp]       = useState(true);
   const [message, setMessage]         = useState("");
   const [started, setStarted]         = useState(false);
-  const [guessesLeft, setGuessesLeft] = useState(3);
   const [hintUsed, setHintUsed]         = useState(false);
   const [shareCopied, setShareCopied]   = useState(false);
   const [lockedShake, setLockedShake]   = useState(false);
@@ -344,28 +343,21 @@ export default function App() {
       setTiles(prev => prev.map(t => ({...t, isRevealed: true})));
       setTimeout(() => { setWon(true); setWinFlipping(false); }, flipTiles.length * 80 + 600);
     } else {
-      const remaining = guessesLeft - 1;
-      setGuessesLeft(remaining);
-      if (remaining === 0) {
-        setWobble(true);
-        setTimeout(() => { setWobble(false); setLost(true); }, 600);
-      } else {
-        setWobble(true);
-        setMessage(`Not quite… ${remaining} guess${remaining === 1 ? "" : "es"} left`);
-        setTimeout(() => { setWobble(false); setMessage(""); }, 1200);
-      }
+      setWobble(true);
+      setMessage("Not quite…");
+      setTimeout(() => { setWobble(false); setMessage(""); }, 1200);
     }
     setGuess("");
   }
 
   async function handleShare() {
-    const hint = hintUsed ? "\nhint taken" : "";
     let text;
     if (won) {
       const revealText = finalScore === 0 ? "zero reveals" : `${finalScore} reveal${finalScore !== 1 ? "s" : ""}`;
-      text = `underwords — ${DATE}: "${TITLE}"\n${getRating(finalScore)} · ${revealText}${hint}`;
+      const emojiLine = ("🟪".repeat(finalScore) + (hintUsed ? " 🟥" : "")).trim();
+      text = `underwords — ${DATE}: "${TITLE}"\n${getRating(finalScore)} · ${revealText}${emojiLine ? "\n" + emojiLine : ""}`;
     } else {
-      text = `underwords — ${DATE}: "${TITLE}"\nno luck${hint}`;
+      text = `underwords — ${DATE}: "${TITLE}"\nno luck${hintUsed ? "\n🟥" : ""}`;
     }
     if (navigator.share) {
       try { await navigator.share({ text }); } catch {}
@@ -380,7 +372,7 @@ export default function App() {
     setTiles(buildTiles(SURFACE, HIDDEN));
     setSelected(null); setGuess(""); setFinalScore(null);
     setWobble(false); setWon(false); setLost(false);
-    setWinFlipping(false); setMessage(""); setGuessesLeft(3); setStarted(false); setHintUsed(false); setLockedShake(false); setDismissedWin(false); setDismissedLoss(false);
+    setWinFlipping(false); setMessage(""); setStarted(false); setHintUsed(false); setLockedShake(false); setDismissedWin(false); setDismissedLoss(false);
   }
 
   return (
@@ -560,16 +552,6 @@ export default function App() {
               <div style={{display:"flex",alignItems:"center",gap:"0.5rem",fontSize:"0.72rem",letterSpacing:"0.18em",color:"var(--color-score-label)",textTransform:"uppercase"}}>
                 Reveals left: <span style={{fontFamily:"'Playfair Display'",fontSize:"1.3rem",fontWeight:700,color:"var(--color-accent)",letterSpacing:0}}>{revealsLeft}</span>
               </div>
-              <div style={{display:"flex",alignItems:"center",gap:"6px"}}>
-                <span style={{fontSize:"0.68rem",letterSpacing:"0.12em",color:"var(--color-score-label)",textTransform:"uppercase",marginRight:2}}>Guesses left</span>
-                {[0,1,2].map(i => (
-                  <div key={i} style={{
-                    width:9, height:9, borderRadius:"50%",
-                    background: i < guessesLeft ? "var(--color-accent)" : "var(--border-inactive)",
-                    transition:"background 0.3s",
-                  }}/>
-                ))}
-              </div>
             </div>
             <div style={{marginLeft:"auto",paddingLeft:"0.75rem"}}>
               {hintUsed
@@ -735,8 +717,6 @@ export default function App() {
               <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>Green tiles are the same in both. Tap a tile to reveal one character of the hidden phrase, but choose wisely. You only get a limited number of reveals, and no two can touch.</p>
 
               <TileRevealAnimation/>
-
-              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>You have three tries to guess the hidden phrase.</p>
 
               <TypingAnimation/>
 
