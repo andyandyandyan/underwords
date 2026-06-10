@@ -641,15 +641,15 @@ export default function App() {
               </button>
             </div>
             <div style={{display:"flex",gap:3,alignItems:"center",justifyContent:"center",height:"8px"}}>
-              {HIDDEN.split("").map((ch, i) =>
-                ch === " "
-                  ? <div key={i} style={{width:8}}/>
-                  : <div key={i} style={{
-                      width:9, height:2, borderRadius:1,
-                      background: i < guess.length ? "var(--color-accent)" : "var(--border-tile-default)",
-                      transition:"background 0.08s",
-                    }}/>
-              )}
+              {Array.from({length: HIDDEN.length}, (_, i) => {
+                const over  = guess.length > HIDDEN.length;
+                const exact = guess.length === HIDDEN.length;
+                const bg = over  ? "#d63030"
+                         : exact ? "#5aaa5a"
+                         : i < guess.length ? "var(--color-accent)"
+                         : "var(--border-tile-default)";
+                return <div key={i} style={{width:9,height:2,borderRadius:1,background:bg,transition:"background 0.08s"}}/>;
+              })}
             </div>
             <div style={{fontSize:"0.65rem",letterSpacing:"0.1em",color:"var(--color-error)",height:"1rem"}}>{message}</div>
           </div>
