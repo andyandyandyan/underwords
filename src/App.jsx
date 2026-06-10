@@ -341,7 +341,7 @@ export default function App() {
 
   function handleGuess() {
     if (won || lost || winFlipping) return;
-    const norm = guess.trim().toUpperCase();
+    const norm = guess.trim().replace(/\.+$/, "").trim().toUpperCase();
     if (norm === HIDDEN) {
       setFinalScore(currentScore);
       setWinFlipping(true);
