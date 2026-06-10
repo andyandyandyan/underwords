@@ -27,13 +27,9 @@ function calcScore(tiles) {
   return tiles.filter(t => !t.isShaded && t.isRevealed && t.hiddenLetter !== " ").length;
 }
 
-function getRating(reveals, budget) {
+function getRating(reveals) {
   if (reveals === 0) return "perfect";
-  const pct = reveals / budget;
-  if (pct <= 0.20) return "elite";
-  if (pct <= 0.50) return "great";
-  if (reveals < budget) return "good";
-  return "phew";
+  return "you got it!";
 }
 
 function MiniTile({ letter, state, size, animating }) {
@@ -367,7 +363,7 @@ export default function App() {
     let text;
     if (won) {
       const revealText = finalScore === 0 ? "zero reveals" : `${finalScore} reveal${finalScore !== 1 ? "s" : ""}`;
-      text = `underwords — ${DATE}: "${TITLE}"\n${getRating(finalScore, revealBudget)} · ${revealText}${hint}`;
+      text = `underwords — ${DATE}: "${TITLE}"\n${getRating(finalScore)} · ${revealText}${hint}`;
     } else {
       text = `underwords — ${DATE}: "${TITLE}"\nno luck${hint}`;
     }
@@ -703,7 +699,7 @@ export default function App() {
                 You got it!
               </div>
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:"3.2rem",fontWeight:900,fontStyle:"italic",color:"var(--color-accent)",lineHeight:1,letterSpacing:"-0.01em"}}>
-                {getRating(finalScore, revealBudget)}
+                {getRating(finalScore)}
               </div>
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.4rem",fontWeight:700,color:"var(--color-page-title)",letterSpacing:"0.02em"}}>
                 {finalScore === 0 ? "zero reveals" : `${finalScore} reveal${finalScore !== 1 ? "s" : ""}`}
