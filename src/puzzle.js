@@ -1,4 +1,4 @@
-export const SURFACE = "FORGIVE AND FORGET";
-export const HIDDEN  = "STOP DROP AND ROLL";
-export const TITLE   = "how to stay cool";
-export const DATE    = "June 9";
+export const SURFACE = "SERMON ON THE MOUNT";
+export const HIDDEN  = "PARTING THE RED SEA";
+export const TITLE   = "something new, something old";
+export const DATE    = "June 10";
