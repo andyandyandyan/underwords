@@ -354,10 +354,10 @@ export default function App() {
     let text;
     if (won) {
       const revealText = finalScore === 0 ? "zero reveals" : `${finalScore} reveal${finalScore !== 1 ? "s" : ""}`;
-      const emojiLine = ("🟪".repeat(finalScore) + (hintUsed ? " 🟥" : "")).trim();
+      const emojiLine = ("🟪".repeat(finalScore) + (hintUsed ? " 🟥 hint taken" : "")).trim();
       text = `underwords — ${DATE}: "${TITLE}"\n${getRating(finalScore)} · ${revealText}${emojiLine ? "\n" + emojiLine : ""}`;
     } else {
-      text = `underwords — ${DATE}: "${TITLE}"\nno luck${hintUsed ? "\n🟥" : ""}`;
+      text = `underwords — ${DATE}: "${TITLE}"\nno luck${hintUsed ? "\n🟥 hint taken" : ""}`;
     }
     if (navigator.share) {
       try { await navigator.share({ text }); } catch {}
