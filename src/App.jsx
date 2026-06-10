@@ -19,6 +19,7 @@ function buildTiles(surface, hidden) {
     hiddenLetter: hidden[i],
     isShaded: char === hidden[i],
     isRevealed: char === hidden[i],
+    isHintRevealed: false,
   }));
 }
 
@@ -311,7 +312,7 @@ export default function App() {
   function handleTileClick(id) {
     if (won || lost || winFlipping) return;
     const adjacentRevealed = tiles.some(t =>
-      (t.id === id - 1 || t.id === id + 1) && t.isRevealed && !t.isShaded && t.hiddenLetter !== " "
+      (t.id === id - 1 || t.id === id + 1) && t.isRevealed && !t.isShaded && !t.isHintRevealed
     );
     if (adjacentRevealed) {
       setLockedShake(true);
@@ -332,7 +333,7 @@ export default function App() {
   function useHint() {
     setTiles(prev => prev.map(t =>
       !t.isShaded && !t.isRevealed && t.hiddenLetter === " "
-        ? { ...t, isRevealed: true }
+        ? { ...t, isRevealed: true, isHintRevealed: true }
         : t
     ));
     setHintUsed(true);
@@ -601,7 +602,7 @@ export default function App() {
                   size={tileSize}
                   isWinFlipping={winFlipping}
                   flipIdx={winFlipping ? flipTiles.findIndex(t => t.id === tile.id) : 0}
-                  isLocked={revealsLeft === 0 || tiles.some(t => (t.id === tile.id - 1 || t.id === tile.id + 1) && t.isRevealed && !t.isShaded && t.hiddenLetter !== " ")}
+                  isLocked={revealsLeft === 0 || tiles.some(t => (t.id === tile.id - 1 || t.id === tile.id + 1) && t.isRevealed && !t.isShaded && !t.isHintRevealed)}
                   showHidden={lost && dismissedLoss}
                 />
               ))}
