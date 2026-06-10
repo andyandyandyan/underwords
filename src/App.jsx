@@ -12,15 +12,19 @@ function calcLayout(surface) {
   return { cols, rows };
 }
 
-function buildTiles(surface, hidden) {
-  return surface.split("").map((char, i) => ({
-    id: i,
-    surfaceLetter: char,
-    hiddenLetter: hidden[i],
-    isShaded: char === hidden[i],
-    isRevealed: char === hidden[i],
-    isHintRevealed: false,
-  }));
+function buildTiles(surface, hidden, hardMode = false) {
+  return surface.split("").map((char, i) => {
+    const isShaded = char === hidden[i];
+    const isAutoSpace = !hardMode && !isShaded && hidden[i] === " ";
+    return {
+      id: i,
+      surfaceLetter: char,
+      hiddenLetter: hidden[i],
+      isShaded,
+      isRevealed: isShaded || isAutoSpace,
+      isHintRevealed: isAutoSpace,
+    };
+  });
 }
 
 function calcScore(tiles) {
@@ -38,6 +42,8 @@ function MiniTile({ letter, state, size, animating }) {
     bg = "var(--bg-tile-shaded)"; border = "var(--border-tile-shaded)"; color = "var(--color-tile-shaded)";
   } else if (state === "revealed") {
     bg = "var(--bg-tile-revealed)"; border = "var(--border-tile-revealed)"; color = "var(--color-tile-revealed)";
+  } else if (state === "hint") {
+    bg = "var(--bg-tile-revealed-space)"; border = "var(--border-tile-revealed)"; color = "var(--color-tile-revealed)";
   } else if (state === "selected") {
     bg = "var(--bg-tile-selected)"; border = "var(--color-accent)"; color = "var(--color-tile-default)";
   } else {
@@ -62,10 +68,10 @@ function MiniTile({ letter, state, size, animating }) {
   );
 }
 
-// Animation 1: PINEAPPLE slides up under PALM TREE (no fade — covered by z-index)
+// Animation 1: PALM TREE slides up under PINEAPPLE (no fade — covered by z-index)
 function SlidingAnimation() {
-  const surf   = "PALM TREE";
-  const hidn   = "PINEAPPLE";
+  const surf   = "PINEAPPLE";
+  const hidn   = "PALM TREE";
   const size   = 23;
   const gap    = 2;
   const tileH  = Math.round(size * 1.15); // 26px
@@ -101,18 +107,19 @@ function SlidingAnimation() {
         zIndex: 1,
         animation:"demoSlideUnder 4s ease-in-out infinite",
       }}>
-        {hidn.split("").map((ch, i) => <MiniTile key={i} letter={ch} state="default" size={size}/>)}
+        {hidn.split("").map((ch, i) => <MiniTile key={i} letter={ch} state={ch === " " ? "hint" : "default"} size={size}/>)}
       </div>
     </div>
   );
 }
 
-// Animation 2: two tiles get selected then revealed; P(0) and E(8) start green
+// Animation 2: space pre-revealed purple; two tiles get selected then revealed; P(0) and E(8) start green
 function TileRevealAnimation() {
-  const surf   = "PALM TREE";
-  const hidn   = "PINEAPPLE";
+  const surf   = "PINEAPPLE";
+  const hidn   = "PALM TREE";
   const SHADED = new Set([0, 8]);
-  const SEQ    = [3, 5];
+  const HINT   = new Set([4]);
+  const SEQ    = [2, 6];
   const size   = 23;
   const gap    = 2;
 
@@ -145,12 +152,14 @@ function TileRevealAnimation() {
       {surf.split("").map((ch, i) => {
         let state = "default";
         if (SHADED.has(i))        state = "shaded";
+        else if (HINT.has(i))     state = "hint";
         else if (revealed.has(i)) state = "revealed";
         else if (selected === i)  state = "selected";
+        const showHidden = SHADED.has(i) || HINT.has(i) || revealed.has(i);
         return (
           <MiniTile
             key={i}
-            letter={revealed.has(i) ? hidn[i] : ch}
+            letter={showHidden ? (hidn[i] === " " ? "" : hidn[i]) : ch}
             state={state}
             size={size}
             animating={justRevealed === i}
@@ -161,9 +170,9 @@ function TileRevealAnimation() {
   );
 }
 
-// Animation 3: "pineapple" types into a guess bar
+// Animation 3: "palm tree" types into a guess bar
 function TypingAnimation() {
-  const text = "pineapple";
+  const text = "palm tree";
   const [displayed, setDisplayed] = useState("");
 
   useEffect(() => {
@@ -288,6 +297,7 @@ export default function App() {
   const [lockedShake, setLockedShake]   = useState(false);
   const [dismissedWin, setDismissedWin]   = useState(false);
   const [dismissedLoss, setDismissedLoss] = useState(false);
+  const [hardMode, setHardMode]           = useState(false);
 
   const { cols } = calcLayout(SURFACE);
   const completeRows  = Math.floor(SURFACE.length / cols);
@@ -369,10 +379,16 @@ export default function App() {
   }
 
   function reset() {
-    setTiles(buildTiles(SURFACE, HIDDEN));
+    setTiles(buildTiles(SURFACE, HIDDEN, hardMode));
     setSelected(null); setGuess(""); setFinalScore(null);
     setWobble(false); setWon(false); setLost(false);
     setWinFlipping(false); setMessage(""); setStarted(false); setHintUsed(false); setLockedShake(false); setDismissedWin(false); setDismissedLoss(false);
+  }
+
+  function toggleHardMode() {
+    if (started || hardMode) return;
+    setHardMode(true);
+    setTiles(buildTiles(SURFACE, HIDDEN, true));
   }
 
   return (
@@ -530,18 +546,36 @@ export default function App() {
                   : <MiniTile key={i} letter={ch} state="default" size={34}/>
               )}
             </div>
-            <button
-              onClick={() => setStarted(true)}
-              style={{
-                background:"var(--color-accent)", border:"none", color:"var(--bg-primary-btn-text)",
-                fontFamily:"'DM Mono',monospace", fontSize:"0.7rem",
-                letterSpacing:"0.2em", textTransform:"uppercase",
-                padding:"0.8rem 2.4rem", borderRadius:3, cursor:"pointer",
-                fontWeight:500,
-              }}
-            >
-              Start game
-            </button>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.75rem"}}>
+              <button
+                onClick={toggleHardMode}
+                title="In hard mode, spaces aren't revealed."
+                style={{
+                  background: hardMode ? "#d63030" : "transparent",
+                  border: `1.5px solid ${hardMode ? "#d63030" : "var(--border-tile-default)"}`,
+                  color: hardMode ? "#fff" : "var(--color-score-label)",
+                  fontFamily:"'DM Mono',monospace", fontSize:"0.6rem",
+                  letterSpacing:"0.15em", textTransform:"uppercase",
+                  padding:"0.4rem 0.9rem", borderRadius:3,
+                  cursor: hardMode ? "default" : "pointer",
+                  fontWeight:500, transition:"all 0.15s",
+                }}
+              >
+                {hardMode ? "Hard mode: on" : "Hard mode"}
+              </button>
+              <button
+                onClick={() => setStarted(true)}
+                style={{
+                  background:"var(--color-accent)", border:"none", color:"var(--bg-primary-btn-text)",
+                  fontFamily:"'DM Mono',monospace", fontSize:"0.7rem",
+                  letterSpacing:"0.2em", textTransform:"uppercase",
+                  padding:"0.8rem 2.4rem", borderRadius:3, cursor:"pointer",
+                  fontWeight:500,
+                }}
+              >
+                Start game
+              </button>
+            </div>
           </div>
         )}
 
@@ -554,7 +588,7 @@ export default function App() {
               </div>
             </div>
             <div style={{marginLeft:"auto",paddingLeft:"0.75rem"}}>
-              {hintUsed
+              {(!hardMode || hintUsed)
                 ? <span style={{fontSize:"0.62rem",letterSpacing:"0.1em",textTransform:"uppercase",color:"#d63030",fontFamily:"'DM Mono',monospace"}}>Spaces revealed.</span>
                 : <button onClick={useHint} style={{background:"transparent",border:"none",color:"#d63030",fontFamily:"'DM Mono',monospace",fontSize:"0.62rem",letterSpacing:"0.1em",textTransform:"uppercase",cursor:"pointer",padding:0,textDecoration:"underline",textUnderlineOffset:"3px"}}>Need a hint?</button>
               }
@@ -714,13 +748,15 @@ export default function App() {
 
               <SlidingAnimation/>
 
-              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>Green tiles are the same in both. Tap a tile to reveal one character of the hidden phrase, but choose wisely. You only get a limited number of reveals, and no two can touch.</p>
+              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>Shared characters (green) and spaces (purple, if they exist) are revealed for you. Tap a tile to reveal one character of the hidden phrase, but choose wisely. You only get a limited number of reveals, and no two can touch.</p>
 
               <TileRevealAnimation/>
 
               <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>Win by guessing the mystery phrase.</p>
 
               <TypingAnimation/>
+
+              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>Want a challenge? Try hard mode.</p>
 
               <button onClick={()=>setShowHelp(false)} style={{background:"var(--color-accent)",border:"none",color:"var(--bg-primary-btn-text)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem",borderRadius:3,cursor:"pointer",fontWeight:500,marginTop:"0.2rem"}}>{started ? "Got it" : "Play"}</button>
             </div>
