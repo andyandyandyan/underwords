@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { SURFACE, HIDDEN, TITLE, DATE } from "./puzzle.js";
 const MAX_ROWS = 7;
 const MIN_COLS = 6;
@@ -21,7 +21,7 @@ function buildTiles(surface, hidden, hardMode = false) {
       surfaceLetter: char,
       hiddenLetter: hidden[i],
       isShaded,
-      isRevealed: isShaded || isAutoSpace,
+      isRevealed: isShaded,
       isHintRevealed: isAutoSpace,
     };
   });
@@ -226,10 +226,10 @@ function TypingAnimation() {
   );
 }
 
-function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocked, showHidden }) {
+function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocked, showHidden, hintFlipDelay }) {
   const isSpace = tile.surfaceLetter === " ";
   const frozenLoss = showHidden && !tile.isShaded && !tile.isRevealed;
-  const canClick = !tile.isShaded && !tile.isRevealed && !isLocked && !showHidden;
+  const canClick = !tile.isShaded && !tile.isRevealed && !tile.isHintRevealed && !isLocked && !showHidden;
 
   let bg, border, color, cursor;
   if (tile.isShaded) {
@@ -248,7 +248,10 @@ function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocke
     color = "var(--color-tile-default)"; cursor = canClick ? "pointer" : "default";
   }
 
-  const animStyle = isWinFlipping && !tile.isShaded ? {
+  const animStyle = hintFlipDelay !== undefined ? {
+    animation: "flipIn 0.4s ease both",
+    animationDelay: `${hintFlipDelay}ms`,
+  } : isWinFlipping && !tile.isShaded ? {
     animation: "flipIn 0.45s ease both",
     animationDelay: `${flipIdx * 80}ms`,
   } : {};
@@ -259,7 +262,7 @@ function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocke
 
   return (
     <div
-      onClick={!tile.isShaded && !tile.isRevealed ? onClick : undefined}
+      onClick={!tile.isShaded && !tile.isRevealed && !tile.isHintRevealed ? onClick : undefined}
       className={canClick && !isSelected ? "tile-hover" : ""}
       style={{
         width: size, height: size * 1.15,
@@ -298,6 +301,8 @@ export default function App() {
   const [dismissedWin, setDismissedWin]   = useState(false);
   const [dismissedLoss, setDismissedLoss] = useState(false);
   const [hardMode, setHardMode]           = useState(false);
+  const [startFlipping, setStartFlipping] = useState(false);
+  const hintFlipDelaysRef = useRef({});
 
   const { cols } = calcLayout(SURFACE);
   const completeRows  = Math.floor(SURFACE.length / cols);
@@ -382,13 +387,26 @@ export default function App() {
     setTiles(buildTiles(SURFACE, HIDDEN, hardMode));
     setSelected(null); setGuess(""); setFinalScore(null);
     setWobble(false); setWon(false); setLost(false);
-    setWinFlipping(false); setMessage(""); setStarted(false); setHintUsed(false); setLockedShake(false); setDismissedWin(false); setDismissedLoss(false);
+    setWinFlipping(false); setMessage(""); setStarted(false); setHintUsed(false); setLockedShake(false); setDismissedWin(false); setDismissedLoss(false); setStartFlipping(false);
   }
 
   function toggleHardMode() {
-    if (started || hardMode) return;
-    setHardMode(true);
-    setTiles(buildTiles(SURFACE, HIDDEN, true));
+    if (started) return;
+    const newMode = !hardMode;
+    setHardMode(newMode);
+    setTiles(buildTiles(SURFACE, HIDDEN, newMode));
+  }
+
+  function startGame() {
+    if (hardMode) { setStarted(true); return; }
+    const hintIds = tiles.filter(t => t.isHintRevealed && !t.isRevealed).map(t => t.id);
+    hintIds.forEach((id, idx) => { hintFlipDelaysRef.current[id] = idx * 100; });
+    setStarted(true);
+    setStartFlipping(true);
+    hintIds.forEach((id, idx) => {
+      setTimeout(() => setTiles(prev => prev.map(t => t.id === id ? {...t, isRevealed: true} : t)), idx * 100 + 170);
+    });
+    setTimeout(() => { setStartFlipping(false); hintFlipDelaysRef.current = {}; }, hintIds.length * 100 + 400);
   }
 
   return (
@@ -547,24 +565,18 @@ export default function App() {
               )}
             </div>
             <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.75rem"}}>
-              <button
+              <div
                 onClick={toggleHardMode}
                 title="In hard mode, spaces aren't revealed."
-                style={{
-                  background: hardMode ? "#d63030" : "transparent",
-                  border: `1.5px solid ${hardMode ? "#d63030" : "var(--border-tile-default)"}`,
-                  color: hardMode ? "#fff" : "var(--color-score-label)",
-                  fontFamily:"'DM Mono',monospace", fontSize:"0.6rem",
-                  letterSpacing:"0.15em", textTransform:"uppercase",
-                  padding:"0.4rem 0.9rem", borderRadius:3,
-                  cursor: hardMode ? "default" : "pointer",
-                  fontWeight:500, transition:"all 0.15s",
-                }}
+                style={{display:"flex",alignItems:"center",gap:"0.55rem",cursor:"pointer",userSelect:"none"}}
               >
-                {hardMode ? "Hard mode: on" : "Hard mode"}
-              </button>
+                <span style={{fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.12em",textTransform:"uppercase",color:hardMode?"#d63030":"var(--color-score-label)",transition:"color 0.2s"}}>Hard mode</span>
+                <div style={{width:38,height:20,borderRadius:10,background:hardMode?"#d63030":"var(--border-tile-default)",position:"relative",transition:"background 0.2s",flexShrink:0}}>
+                  <div style={{position:"absolute",top:3,left:hardMode?20:3,width:14,height:14,borderRadius:"50%",background:"#fff",transition:"left 0.2s",boxShadow:"0 1px 2px rgba(0,0,0,0.25)"}}/>
+                </div>
+              </div>
               <button
-                onClick={() => setStarted(true)}
+                onClick={startGame}
                 style={{
                   background:"var(--color-accent)", border:"none", color:"var(--bg-primary-btn-text)",
                   fontFamily:"'DM Mono',monospace", fontSize:"0.7rem",
@@ -588,10 +600,10 @@ export default function App() {
               </div>
             </div>
             <div style={{marginLeft:"auto",paddingLeft:"0.75rem"}}>
-              {(!hardMode || hintUsed)
+              {hardMode && (hintUsed
                 ? <span style={{fontSize:"0.62rem",letterSpacing:"0.1em",textTransform:"uppercase",color:"#d63030",fontFamily:"'DM Mono',monospace"}}>Spaces revealed.</span>
                 : <button onClick={useHint} style={{background:"transparent",border:"none",color:"#d63030",fontFamily:"'DM Mono',monospace",fontSize:"0.62rem",letterSpacing:"0.1em",textTransform:"uppercase",cursor:"pointer",padding:0,textDecoration:"underline",textUnderlineOffset:"3px"}}>Need a hint?</button>
-              }
+              )}
             </div>
           </div>
         )}
@@ -616,6 +628,7 @@ export default function App() {
                   flipIdx={winFlipping ? flipTiles.findIndex(t => t.id === tile.id) : 0}
                   isLocked={revealsLeft === 0 || tiles.some(t => (t.id === tile.id - 1 || t.id === tile.id + 1) && t.isRevealed && !t.isShaded && !t.isHintRevealed)}
                   showHidden={lost && dismissedLoss}
+                  hintFlipDelay={startFlipping && tile.isHintRevealed && !tile.isRevealed ? (hintFlipDelaysRef.current[tile.id] ?? 0) : undefined}
                 />
               ))}
             </div>
@@ -748,15 +761,13 @@ export default function App() {
 
               <SlidingAnimation/>
 
-              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>Shared characters (green) and spaces (purple, if they exist) are revealed for you. Tap a tile to reveal one character of the hidden phrase, but choose wisely. You only get a limited number of reveals, and no two can touch.</p>
+              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>Shared characters (green) and spaces (purple) are revealed for you, if they exist. Tap a tile to reveal one character of the hidden phrase, but choose wisely. You only get a limited number of reveals, and no two can touch.</p>
 
               <TileRevealAnimation/>
 
               <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>Win by guessing the mystery phrase.</p>
 
               <TypingAnimation/>
-
-              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>Want a challenge? Try hard mode.</p>
 
               <button onClick={()=>setShowHelp(false)} style={{background:"var(--color-accent)",border:"none",color:"var(--bg-primary-btn-text)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem",borderRadius:3,cursor:"pointer",fontWeight:500,marginTop:"0.2rem"}}>{started ? "Got it" : "Play"}</button>
             </div>
