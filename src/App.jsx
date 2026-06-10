@@ -29,7 +29,7 @@ function calcScore(tiles) {
 
 function getRating(reveals) {
   if (reveals === 0) return "perfect";
-  return "you got it!";
+  return "nice!";
 }
 
 function MiniTile({ letter, state, size, animating }) {
