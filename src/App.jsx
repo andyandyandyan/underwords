@@ -642,8 +642,9 @@ export default function App() {
             </div>
             <div style={{display:"flex",gap:3,alignItems:"center",justifyContent:"center",height:"8px"}}>
               {Array.from({length: HIDDEN.length}, (_, i) => {
-                const over  = guess.length > HIDDEN.length;
-                const exact = guess.length === HIDDEN.length;
+                const normLen = guess.trim().replace(/\.+$/, "").trim().length;
+                const over  = normLen > HIDDEN.length;
+                const exact = normLen === HIDDEN.length;
                 const bg = over  ? "#d63030"
                          : exact ? "#5aaa5a"
                          : i < guess.length ? "var(--color-accent)"
