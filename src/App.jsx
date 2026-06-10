@@ -249,7 +249,7 @@ function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocke
   }
 
   const animStyle = hintFlipDelay !== undefined ? {
-    animation: "flipIn 0.4s ease both",
+    animation: "flipIn 0.2s ease both",
     animationDelay: `${hintFlipDelay}ms`,
   } : isWinFlipping && !tile.isShaded ? {
     animation: "flipIn 0.45s ease both",
@@ -400,13 +400,13 @@ export default function App() {
   function startGame() {
     if (hardMode) { setStarted(true); return; }
     const hintIds = tiles.filter(t => t.isHintRevealed && !t.isRevealed).map(t => t.id);
-    hintIds.forEach((id, idx) => { hintFlipDelaysRef.current[id] = idx * 100; });
+    hintIds.forEach((id, idx) => { hintFlipDelaysRef.current[id] = idx * 50; });
     setStarted(true);
     setStartFlipping(true);
     hintIds.forEach((id, idx) => {
-      setTimeout(() => setTiles(prev => prev.map(t => t.id === id ? {...t, isRevealed: true} : t)), idx * 100 + 170);
+      setTimeout(() => setTiles(prev => prev.map(t => t.id === id ? {...t, isRevealed: true} : t)), idx * 50 + 85);
     });
-    setTimeout(() => { setStartFlipping(false); hintFlipDelaysRef.current = {}; }, hintIds.length * 100 + 400);
+    setTimeout(() => { setStartFlipping(false); hintFlipDelaysRef.current = {}; }, hintIds.length * 50 + 200);
   }
 
   return (
@@ -599,12 +599,6 @@ export default function App() {
                 Reveals left: <span style={{fontFamily:"'Playfair Display'",fontSize:"1.3rem",fontWeight:700,color:"var(--color-accent)",letterSpacing:0}}>{revealsLeft}</span>
               </div>
             </div>
-            <div style={{marginLeft:"auto",paddingLeft:"0.75rem"}}>
-              {hardMode && (hintUsed
-                ? <span style={{fontSize:"0.62rem",letterSpacing:"0.1em",textTransform:"uppercase",color:"#d63030",fontFamily:"'DM Mono',monospace"}}>Spaces revealed.</span>
-                : <button onClick={useHint} style={{background:"transparent",border:"none",color:"#d63030",fontFamily:"'DM Mono',monospace",fontSize:"0.62rem",letterSpacing:"0.1em",textTransform:"uppercase",cursor:"pointer",padding:0,textDecoration:"underline",textUnderlineOffset:"3px"}}>Need a hint?</button>
-              )}
-            </div>
           </div>
         )}
 
@@ -761,7 +755,7 @@ export default function App() {
 
               <SlidingAnimation/>
 
-              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>Shared characters (green) and spaces (purple) are revealed for you, if they exist. Tap a tile to reveal one character of the hidden phrase, but choose wisely. You only get a limited number of reveals, and no two can touch.</p>
+              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>If they exist, shared characters are revealed in green, and spaces in purple. Tap a tile to reveal one character of the hidden phrase, but choose wisely. You only get a limited number of reveals, and no two can touch.</p>
 
               <TileRevealAnimation/>
 
