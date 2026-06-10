@@ -152,7 +152,7 @@ function TileRevealAnimation() {
       {surf.split("").map((ch, i) => {
         let state = "default";
         if (SHADED.has(i))        state = "shaded";
-        else if (HINT.has(i))     state = "hint";
+        else if (HINT.has(i))     state = "shaded";
         else if (revealed.has(i)) state = "revealed";
         else if (selected === i)  state = "selected";
         const showHidden = SHADED.has(i) || HINT.has(i) || revealed.has(i);
@@ -236,9 +236,14 @@ function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocke
     bg = isSpace ? "var(--bg-tile-shaded-space)" : "var(--bg-tile-shaded)";
     border = "var(--border-tile-shaded)"; color = "var(--color-tile-shaded)"; cursor = "default";
   } else if (tile.isRevealed) {
-    bg = isSpace ? "var(--bg-tile-revealed-space)" : "var(--bg-tile-revealed)";
-    border = isSelected ? "var(--color-accent)" : "var(--border-tile-revealed)";
-    color = "var(--color-tile-revealed)"; cursor = "default";
+    if (tile.isHintRevealed) {
+      bg = "var(--bg-tile-shaded-space)"; border = "var(--border-tile-shaded)"; color = "var(--color-tile-shaded)";
+    } else {
+      bg = isSpace ? "var(--bg-tile-revealed-space)" : "var(--bg-tile-revealed)";
+      border = isSelected ? "var(--color-accent)" : "var(--border-tile-revealed)";
+      color = "var(--color-tile-revealed)";
+    }
+    cursor = "default";
   } else if (frozenLoss) {
     bg = "var(--bg-tile-default)"; border = "var(--border-tile-default)";
     color = "var(--color-page-title)"; cursor = "default";
@@ -744,7 +749,7 @@ export default function App() {
 
               <SlidingAnimation/>
 
-              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>If they exist, shared characters are revealed in green, and spaces in purple. Tap a tile to reveal one character of the hidden phrase, but choose wisely. You only get a limited number of reveals, and no two can touch.</p>
+              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>If they exist, shared characters and spaces are revealed in green. Tap a tile to reveal one character of the hidden phrase, but choose wisely. You only get a limited number of reveals, and no two can touch.</p>
 
               <TileRevealAnimation/>
 
