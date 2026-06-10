@@ -749,7 +749,7 @@ export default function App() {
 
               <SlidingAnimation/>
 
-              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>If they exist, shared characters and spaces are revealed in green. Tap a tile to reveal one character of the hidden phrase, but choose wisely. You only get a limited number of reveals, and no two can touch.</p>
+              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>Shared characters and spaces, if they exist, are revealed in green. Tap a tile to reveal one character of the hidden phrase, but choose wisely. You only get a limited number of reveals, and no two can touch.</p>
 
               <TileRevealAnimation/>
 
