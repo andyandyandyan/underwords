@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { SURFACE, HIDDEN, TITLE, DATE } from "./puzzle.js";
 const MAX_ROWS = 7;
 const MIN_COLS = 6;
@@ -21,7 +21,7 @@ function buildTiles(surface, hidden, hardMode = false) {
       surfaceLetter: char,
       hiddenLetter: hidden[i],
       isShaded,
-      isRevealed: isShaded,
+      isRevealed: isShaded || isAutoSpace,
       isHintRevealed: isAutoSpace,
     };
   });
@@ -226,7 +226,7 @@ function TypingAnimation() {
   );
 }
 
-function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocked, showHidden, hintFlipDelay }) {
+function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocked, showHidden }) {
   const isSpace = tile.surfaceLetter === " ";
   const frozenLoss = showHidden && !tile.isShaded && !tile.isRevealed;
   const canClick = !tile.isShaded && !tile.isRevealed && !tile.isHintRevealed && !isLocked && !showHidden;
@@ -248,10 +248,7 @@ function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocke
     color = "var(--color-tile-default)"; cursor = canClick ? "pointer" : "default";
   }
 
-  const animStyle = hintFlipDelay !== undefined ? {
-    animation: "flipIn 0.2s ease both",
-    animationDelay: `${hintFlipDelay}ms`,
-  } : isWinFlipping && !tile.isShaded ? {
+  const animStyle = isWinFlipping && !tile.isShaded ? {
     animation: "flipIn 0.45s ease both",
     animationDelay: `${flipIdx * 80}ms`,
   } : {};
@@ -301,8 +298,6 @@ export default function App() {
   const [dismissedWin, setDismissedWin]   = useState(false);
   const [dismissedLoss, setDismissedLoss] = useState(false);
   const [hardMode, setHardMode]           = useState(false);
-  const [startFlipping, setStartFlipping] = useState(false);
-  const hintFlipDelaysRef = useRef({});
 
   const { cols } = calcLayout(SURFACE);
   const completeRows  = Math.floor(SURFACE.length / cols);
@@ -367,12 +362,14 @@ export default function App() {
 
   async function handleShare() {
     let text;
+    const hardLine = hardMode ? "\nhard mode" : "";
     if (won) {
       const revealText = finalScore === 0 ? "zero reveals" : `${finalScore} reveal${finalScore !== 1 ? "s" : ""}`;
+      const prefix = finalScore === 0 ? "perfect · " : "";
       const emojiLine = ("🟪".repeat(finalScore) + (hintUsed ? " 🟥 hint taken" : "")).trim();
-      text = `underwords — ${DATE}: "${TITLE}"\n${getRating(finalScore)} · ${revealText}${emojiLine ? "\n" + emojiLine : ""}`;
+      text = `underwords — ${DATE}: "${TITLE}"\n${prefix}${revealText}${emojiLine ? "\n" + emojiLine : ""}${hardLine}`;
     } else {
-      text = `underwords — ${DATE}: "${TITLE}"\nno luck${hintUsed ? "\n🟥 hint taken" : ""}`;
+      text = `underwords — ${DATE}: "${TITLE}"\nno luck${hintUsed ? "\n🟥 hint taken" : ""}${hardLine}`;
     }
     if (navigator.share) {
       try { await navigator.share({ text }); } catch {}
@@ -387,7 +384,7 @@ export default function App() {
     setTiles(buildTiles(SURFACE, HIDDEN, hardMode));
     setSelected(null); setGuess(""); setFinalScore(null);
     setWobble(false); setWon(false); setLost(false);
-    setWinFlipping(false); setMessage(""); setStarted(false); setHintUsed(false); setLockedShake(false); setDismissedWin(false); setDismissedLoss(false); setStartFlipping(false);
+    setWinFlipping(false); setMessage(""); setStarted(false); setHintUsed(false); setLockedShake(false); setDismissedWin(false); setDismissedLoss(false);
   }
 
   function toggleHardMode() {
@@ -397,17 +394,7 @@ export default function App() {
     setTiles(buildTiles(SURFACE, HIDDEN, newMode));
   }
 
-  function startGame() {
-    if (hardMode) { setStarted(true); return; }
-    const hintIds = tiles.filter(t => t.isHintRevealed && !t.isRevealed).map(t => t.id);
-    hintIds.forEach((id, idx) => { hintFlipDelaysRef.current[id] = idx * 50; });
-    setStarted(true);
-    setStartFlipping(true);
-    hintIds.forEach((id, idx) => {
-      setTimeout(() => setTiles(prev => prev.map(t => t.id === id ? {...t, isRevealed: true} : t)), idx * 50 + 85);
-    });
-    setTimeout(() => { setStartFlipping(false); hintFlipDelaysRef.current = {}; }, hintIds.length * 50 + 200);
-  }
+  function startGame() { setStarted(true); }
 
   return (
     <>
@@ -557,12 +544,14 @@ export default function App() {
         {/* Pre-game: phrase in tile form */}
         {!started && !showHelp && (
           <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"2rem",animation:"fadeUp 0.4s ease both",padding:"0 1rem"}}>
-            <div style={{display:"flex",flexWrap:"wrap",gap:4,justifyContent:"center"}}>
-              {SURFACE.split("").map((ch, i) =>
-                ch === " "
-                  ? <div key={i} style={{width:14}}/>
-                  : <MiniTile key={i} letter={ch} state="default" size={34}/>
-              )}
+            <div style={{display:"flex",flexWrap:"wrap",gap:"8px 10px",justifyContent:"center"}}>
+              {SURFACE.split(" ").map((word, wi) => (
+                <div key={wi} style={{display:"flex",gap:4,flexShrink:0}}>
+                  {word.split("").map((ch, ci) => (
+                    <MiniTile key={ci} letter={ch} state="default" size={34}/>
+                  ))}
+                </div>
+              ))}
             </div>
             <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.75rem"}}>
               <div
@@ -622,7 +611,7 @@ export default function App() {
                   flipIdx={winFlipping ? flipTiles.findIndex(t => t.id === tile.id) : 0}
                   isLocked={revealsLeft === 0 || tiles.some(t => (t.id === tile.id - 1 || t.id === tile.id + 1) && t.isRevealed && !t.isShaded && !t.isHintRevealed)}
                   showHidden={lost && dismissedLoss}
-                  hintFlipDelay={startFlipping && tile.isHintRevealed && !tile.isRevealed ? (hintFlipDelaysRef.current[tile.id] ?? 0) : undefined}
+
                 />
               ))}
             </div>
