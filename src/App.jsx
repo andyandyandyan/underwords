@@ -107,7 +107,7 @@ function SlidingAnimation() {
         zIndex: 1,
         animation:"demoSlideUnder 4s ease-in-out infinite",
       }}>
-        {hidn.split("").map((ch, i) => <MiniTile key={i} letter={ch} state={ch === " " ? "hint" : "default"} size={size}/>)}
+        {hidn.split("").map((ch, i) => <MiniTile key={i} letter={ch} state={ch === " " ? "shaded" : "default"} size={size}/>)}
       </div>
     </div>
   );
