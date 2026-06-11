@@ -331,6 +331,7 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem("doppel_history") || "{}"); }
     catch { return {}; }
   });
+  const [showStats, setShowStats] = useState(false);
 
   const pSurface = activePuzzle ? activePuzzle.surface : SURFACE;
   const pHidden  = activePuzzle ? activePuzzle.hidden  : HIDDEN;
@@ -351,6 +352,18 @@ export default function App() {
   for (let i = 0; i < tiles.length; i += cols) {
     rows.push(tiles.slice(i, i + cols));
   }
+
+  const blockDailyStart = !activePuzzle && !!history[DATE];
+
+  const histResults  = Object.values(history);
+  const statsPlayed  = histResults.length;
+  const statsWon     = histResults.filter(r => r.result === "won").length;
+  const statsGaveUp  = histResults.filter(r => r.result === "gaveUp").length;
+  const statsPerfect = histResults.filter(r => r.result === "won" && r.reveals === 0).length;
+  const statsWonList = histResults.filter(r => r.result === "won");
+  const statsMaxR    = statsWonList.length ? Math.max(...statsWonList.map(r => r.reveals)) : 0;
+  const statsDist    = {};
+  statsWonList.forEach(r => { statsDist[r.reveals] = (statsDist[r.reveals] || 0) + 1; });
 
   function handleTileClick(id) {
     if (won || lost || gaveUp || winFlipping || gaveUpFlipping) return;
@@ -640,35 +653,57 @@ export default function App() {
                 </div>
               ))}
             </div>
-            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.75rem"}}>
-              <div
-                onClick={toggleHardMode}
-                title="In hard mode, spaces aren't revealed."
-                style={{display:"flex",alignItems:"center",gap:"0.55rem",cursor:"pointer",userSelect:"none"}}
-              >
-                <span style={{fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.12em",textTransform:"uppercase",color:hardMode?"#d63030":"var(--color-score-label)",transition:"color 0.2s"}}>Hard mode</span>
-                <div style={{width:38,height:20,borderRadius:10,background:hardMode?"#d63030":"var(--border-tile-default)",position:"relative",transition:"background 0.2s",flexShrink:0}}>
-                  <div style={{position:"absolute",top:3,left:hardMode?20:3,width:14,height:14,borderRadius:"50%",background:"#fff",transition:"left 0.2s",boxShadow:"0 1px 2px rgba(0,0,0,0.25)"}}/>
+            {blockDailyStart ? (
+              <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.75rem",textAlign:"center"}}>
+                <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.12em",textTransform:"uppercase",color:"var(--color-dim)"}}>
+                  you've already played today
                 </div>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:"2rem",fontWeight:900,fontStyle:"italic",lineHeight:1,color: history[DATE].result === "won" ? "var(--color-accent)" : "var(--color-lose)"}}>
+                  {history[DATE].result === "won"
+                    ? (history[DATE].reveals === 0 ? "perfect" : `${history[DATE].reveals} reveal${history[DATE].reveals !== 1 ? "s" : ""}`)
+                    : "didn't get it"}
+                </div>
+                <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.1em",color:"var(--color-dim)"}}>
+                  come back tomorrow for a new one
+                </div>
+                <button onClick={() => setShowStats(true)} style={{background:"var(--color-accent)",border:"none",color:"var(--bg-primary-btn-text)",fontFamily:"'DM Mono',monospace",fontSize:"0.7rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.8rem 2.4rem",borderRadius:3,cursor:"pointer",fontWeight:500,marginTop:"0.25rem"}}>
+                  My stats
+                </button>
+                <button onClick={() => setShowArchive(true)} style={{background:"transparent",border:"1.5px solid var(--border-secondary-btn)",color:"var(--color-secondary-btn)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem 1.8rem",borderRadius:3,cursor:"pointer"}}>
+                  Play archive
+                </button>
               </div>
-              <button
-                onClick={startGame}
-                style={{
-                  background:"var(--color-accent)", border:"none", color:"var(--bg-primary-btn-text)",
-                  fontFamily:"'DM Mono',monospace", fontSize:"0.7rem",
-                  letterSpacing:"0.2em", textTransform:"uppercase",
-                  padding:"0.8rem 2.4rem", borderRadius:3, cursor:"pointer",
-                  fontWeight:500,
-                }}
-              >
-                Start game
-              </button>
-              {hardMode && (
-                <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.08em",color:"#d63030",animation:"fadeUp 0.25s ease both"}}>
-                  In hard mode, spaces are not revealed.
+            ) : (
+              <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.75rem"}}>
+                <div
+                  onClick={toggleHardMode}
+                  title="In hard mode, spaces aren't revealed."
+                  style={{display:"flex",alignItems:"center",gap:"0.55rem",cursor:"pointer",userSelect:"none"}}
+                >
+                  <span style={{fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.12em",textTransform:"uppercase",color:hardMode?"#d63030":"var(--color-score-label)",transition:"color 0.2s"}}>Hard mode</span>
+                  <div style={{width:38,height:20,borderRadius:10,background:hardMode?"#d63030":"var(--border-tile-default)",position:"relative",transition:"background 0.2s",flexShrink:0}}>
+                    <div style={{position:"absolute",top:3,left:hardMode?20:3,width:14,height:14,borderRadius:"50%",background:"#fff",transition:"left 0.2s",boxShadow:"0 1px 2px rgba(0,0,0,0.25)"}}/>
+                  </div>
                 </div>
-              )}
-            </div>
+                <button
+                  onClick={startGame}
+                  style={{
+                    background:"var(--color-accent)", border:"none", color:"var(--bg-primary-btn-text)",
+                    fontFamily:"'DM Mono',monospace", fontSize:"0.7rem",
+                    letterSpacing:"0.2em", textTransform:"uppercase",
+                    padding:"0.8rem 2.4rem", borderRadius:3, cursor:"pointer",
+                    fontWeight:500,
+                  }}
+                >
+                  Start game
+                </button>
+                {hardMode && (
+                  <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.08em",color:"#d63030",animation:"fadeUp 0.25s ease both"}}>
+                    In hard mode, spaces are not revealed.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -824,6 +859,9 @@ export default function App() {
                 <button onClick={() => setShowArchive(true)} style={{background:"transparent",border:"1.5px solid var(--border-secondary-btn)",color:"var(--color-secondary-btn)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem 1.4rem",borderRadius:3,cursor:"pointer",fontWeight:500,transition:"all 0.15s"}}>
                   Play archive
                 </button>
+                <button onClick={() => setShowStats(true)} style={{background:"transparent",border:"none",color:"var(--color-dim)",fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.12em",textTransform:"uppercase",padding:"0.3rem",cursor:"pointer"}}>
+                  My stats
+                </button>
               </div>
             </div>
           </div>
@@ -851,7 +889,69 @@ export default function App() {
                 <button onClick={() => { setDismissedGaveUp(true); setShowArchive(true); }} style={{background:"transparent",border:"1.5px solid var(--border-secondary-btn)",color:"var(--color-secondary-btn)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem 1.4rem",borderRadius:3,cursor:"pointer",fontWeight:500,transition:"all 0.15s"}}>
                   Play archive
                 </button>
+                <button onClick={() => setShowStats(true)} style={{background:"transparent",border:"none",color:"var(--color-dim)",fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.12em",textTransform:"uppercase",padding:"0.3rem",cursor:"pointer"}}>
+                  My stats
+                </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Stats modal */}
+        {showStats && (
+          <div onClick={() => setShowStats(false)} style={{position:"fixed",inset:0,background:"var(--bg-overlay)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1.5rem",zIndex:110}}>
+            <div onClick={e => e.stopPropagation()} style={{background:"var(--bg-modal)",border:`1.5px solid var(--border-modal)`,borderRadius:8,padding:"2rem 1.8rem",maxWidth:300,width:"100%",display:"flex",flexDirection:"column",gap:"1.2rem",animation:"fadeUp 0.3s ease both"}}>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.4rem",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)"}}>My Stats</div>
+
+              {/* Summary row */}
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",textAlign:"center",gap:"0.5rem"}}>
+                {[["played", statsPlayed], ["won", statsWon], ["gave up", statsGaveUp], ["perfect", statsPerfect]].map(([label, val]) => (
+                  <div key={label}>
+                    <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.6rem",fontWeight:700,color:"var(--color-page-title)",lineHeight:1}}>{val}</div>
+                    <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.5rem",letterSpacing:"0.1em",textTransform:"uppercase",color:"var(--color-dim)",marginTop:"0.2rem"}}>{label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Reveal distribution */}
+              {statsWon > 0 && (
+                <div style={{display:"flex",flexDirection:"column",gap:"0.35rem"}}>
+                  <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.55rem",letterSpacing:"0.14em",textTransform:"uppercase",color:"var(--color-dim)",marginBottom:"0.1rem"}}>Reveals (wins)</div>
+                  {Array.from({length: statsMaxR + 1}, (_, i) => {
+                    const count = statsDist[i] || 0;
+                    const pct   = Math.round((count / statsWon) * 100);
+                    return (
+                      <div key={i} style={{display:"flex",alignItems:"center",gap:"0.5rem"}}>
+                        <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",color:"var(--color-dim)",width:"1rem",textAlign:"right",flexShrink:0}}>{i}</div>
+                        <div style={{flex:1,height:18,borderRadius:2,background:"var(--bg-tile-default)",overflow:"hidden"}}>
+                          <div style={{height:"100%",width:`${pct}%`,minWidth: count ? 28 : 0,background: i === 0 ? "var(--color-accent)" : "var(--border-tile-shaded)",borderRadius:2,display:"flex",alignItems:"center",justifyContent:"flex-end",paddingRight:"0.3rem",transition:"width 0.4s ease"}}>
+                            {count > 0 && <span style={{fontFamily:"'DM Mono',monospace",fontSize:"0.55rem",color: i === 0 ? "var(--bg-primary-btn-text)" : "var(--color-tile-shaded)",fontWeight:500}}>{count}</span>}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {statsGaveUp > 0 && (
+                    <div style={{display:"flex",alignItems:"center",gap:"0.5rem"}}>
+                      <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.55rem",color:"var(--color-dim)",width:"1rem",flexShrink:0}}>✕</div>
+                      <div style={{flex:1,height:18,borderRadius:2,background:"var(--bg-tile-default)",overflow:"hidden"}}>
+                        <div style={{height:"100%",width:`${Math.round((statsGaveUp / statsPlayed) * 100)}%`,minWidth: statsGaveUp ? 28 : 0,background:"var(--color-lose)",opacity:0.6,borderRadius:2,display:"flex",alignItems:"center",justifyContent:"flex-end",paddingRight:"0.3rem"}}>
+                          <span style={{fontFamily:"'DM Mono',monospace",fontSize:"0.55rem",color:"#fff",fontWeight:500}}>{statsGaveUp}</span>
+                        </div>
+                      </div>
+                      <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.5rem",letterSpacing:"0.08em",color:"var(--color-lose)",opacity:0.7,flexShrink:0}}>gave up</div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {statsPlayed === 0 && (
+                <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.7rem",color:"var(--color-dim)",textAlign:"center"}}>No games played yet.</div>
+              )}
+
+              <button onClick={() => setShowStats(false)} style={{background:"transparent",border:"1.5px solid var(--border-secondary-btn)",color:"var(--color-secondary-btn)",fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.6rem",borderRadius:3,cursor:"pointer"}}>
+                Close
+              </button>
             </div>
           </div>
         )}
