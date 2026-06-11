@@ -581,6 +581,11 @@ export default function App() {
               >
                 Start game
               </button>
+              {hardMode && (
+                <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.08em",color:"#d63030",animation:"fadeUp 0.25s ease both"}}>
+                  In hard mode, spaces are not revealed.
+                </div>
+              )}
             </div>
           </div>
         )}
