@@ -113,16 +113,17 @@ function SlidingAnimation() {
   );
 }
 
-// Animation 2: space pre-revealed purple; two tiles get selected then revealed; P(0) and E(8) start green
+// Animation 2: P and E flip green, then blank middle flips green, then two tiles selected+revealed
 function TileRevealAnimation() {
-  const surf   = "PINEAPPLE";
-  const hidn   = "PALM TREE";
-  const SHADED = new Set([0, 8]);
-  const HINT   = new Set([4]);
-  const SEQ    = [2, 6];
-  const size   = 23;
-  const gap    = 2;
+  const surf     = "PINEAPPLE";
+  const hidn     = "PALM TREE";
+  const HINT_IDX = 4;
+  const SEQ      = [2, 6];
+  const size     = 23;
+  const gap      = 2;
 
+  const [greenSet,     setGreenSet]     = useState(new Set());
+  const [justGreen,    setJustGreen]    = useState(null);
   const [selected,     setSelected]     = useState(null);
   const [revealed,     setRevealed]     = useState(new Set());
   const [justRevealed, setJustRevealed] = useState(null);
@@ -131,16 +132,23 @@ function TileRevealAnimation() {
     const ids = [];
     let alive = true;
     function sched(fn, ms) { const id = setTimeout(() => { if (alive) fn(); }, ms); ids.push(id); }
+    function addGreen(idx) { setGreenSet(s => new Set([...s, idx])); setJustGreen(idx); }
 
     function run() {
-      sched(() => setSelected(SEQ[0]), 500);
-      sched(() => { setRevealed(s => new Set([...s, SEQ[0]])); setJustRevealed(SEQ[0]); setSelected(null); }, 1200);
-      sched(() => setJustRevealed(null), 1700);
-      sched(() => setSelected(SEQ[1]), 2400);
-      sched(() => { setRevealed(s => new Set([...s, SEQ[1]])); setJustRevealed(SEQ[1]); setSelected(null); }, 3100);
-      sched(() => setJustRevealed(null), 3600);
-      sched(() => { setRevealed(new Set()); setSelected(null); }, 5000);
-      sched(run, 5500);
+      sched(() => addGreen(0), 300);
+      sched(() => setJustGreen(null), 600);
+      sched(() => addGreen(8), 1000);
+      sched(() => setJustGreen(null), 1300);
+      sched(() => addGreen(HINT_IDX), 1700);
+      sched(() => setJustGreen(null), 2000);
+      sched(() => setSelected(SEQ[0]), 2500);
+      sched(() => { setRevealed(s => new Set([...s, SEQ[0]])); setJustRevealed(SEQ[0]); setSelected(null); }, 3200);
+      sched(() => setJustRevealed(null), 3700);
+      sched(() => setSelected(SEQ[1]), 4400);
+      sched(() => { setRevealed(s => new Set([...s, SEQ[1]])); setJustRevealed(SEQ[1]); setSelected(null); }, 5100);
+      sched(() => setJustRevealed(null), 5600);
+      sched(() => { setGreenSet(new Set()); setRevealed(new Set()); setSelected(null); }, 6800);
+      sched(run, 7300);
     }
 
     sched(run, 400);
@@ -150,19 +158,20 @@ function TileRevealAnimation() {
   return (
     <div style={{ display:"flex", gap, justifyContent:"center" }}>
       {surf.split("").map((ch, i) => {
+        const isGreen = greenSet.has(i);
+        const isHint  = isGreen && i === HINT_IDX;
         let state = "default";
-        if (SHADED.has(i))        state = "shaded";
-        else if (HINT.has(i))     state = "shaded";
+        if (isGreen)           state = "shaded";
         else if (revealed.has(i)) state = "revealed";
         else if (selected === i)  state = "selected";
-        const showHidden = SHADED.has(i) || HINT.has(i) || revealed.has(i);
+        const showHidden = isHint || revealed.has(i);
         return (
           <MiniTile
             key={i}
             letter={showHidden ? (hidn[i] === " " ? "" : hidn[i]) : ch}
             state={state}
             size={size}
-            animating={justRevealed === i}
+            animating={justGreen === i || justRevealed === i}
           />
         );
       })}
