@@ -656,7 +656,7 @@ export default function App() {
             {blockStart ? (
               <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.75rem",textAlign:"center"}}>
                 <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.12em",textTransform:"uppercase",color:"var(--color-dim)"}}>
-                  you've already played today
+                  {!activePuzzle ? "you've already played today" : "you've already played this one"}
                 </div>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:"2rem",fontWeight:900,fontStyle:"italic",lineHeight:1,color: history[pDate].result === "won" ? "var(--color-accent)" : "var(--color-lose)"}}>
                   {history[pDate].result === "won"
