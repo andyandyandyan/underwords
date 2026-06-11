@@ -1,4 +1,4 @@
-export const SURFACE = "SERMON ON THE MOUNT";
-export const HIDDEN  = "PARTING THE RED SEA";
-export const TITLE   = "something new, something old";
-export const DATE    = "June 10";
+export const SURFACE = "SUNSET BOULEVARD";
+export const HIDDEN  = "MULHOLLAND DRIVE";
+export const TITLE   = "hollywood on hollywood";
+export const DATE    = "June 11";
