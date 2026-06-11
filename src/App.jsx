@@ -235,13 +235,16 @@ function TypingAnimation() {
   );
 }
 
-function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocked, showHidden }) {
+function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocked, showHidden, startAppearPending, startAnimating }) {
   const isSpace = tile.surfaceLetter === " ";
   const frozenLoss = showHidden && !tile.isShaded && !tile.isRevealed;
   const canClick = !tile.isShaded && !tile.isRevealed && !tile.isHintRevealed && !isLocked && !showHidden;
 
   let bg, border, color, cursor;
-  if (tile.isShaded) {
+  if (startAppearPending) {
+    bg = "var(--bg-tile-default)"; border = "var(--border-tile-default)";
+    color = "var(--color-tile-default)"; cursor = "default";
+  } else if (tile.isShaded) {
     bg = isSpace ? "var(--bg-tile-shaded-space)" : "var(--bg-tile-shaded)";
     border = "var(--border-tile-shaded)"; color = "var(--color-tile-shaded)"; cursor = "default";
   } else if (tile.isRevealed) {
@@ -262,14 +265,18 @@ function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocke
     color = "var(--color-tile-default)"; cursor = canClick ? "pointer" : "default";
   }
 
-  const animStyle = isWinFlipping && !tile.isShaded ? {
+  const animStyle = startAnimating ? {
+    animation: "flipIn 0.4s ease both",
+  } : isWinFlipping && !tile.isShaded ? {
     animation: "flipIn 0.45s ease both",
     animationDelay: `${flipIdx * 80}ms`,
   } : {};
 
-  const letter = (tile.isRevealed || frozenLoss)
-    ? (tile.hiddenLetter === " " ? "" : tile.hiddenLetter)
-    : (tile.surfaceLetter === " " ? "" : tile.surfaceLetter);
+  const letter = startAppearPending
+    ? (tile.surfaceLetter === " " ? "" : tile.surfaceLetter)
+    : (tile.isRevealed || frozenLoss)
+      ? (tile.hiddenLetter === " " ? "" : tile.hiddenLetter)
+      : (tile.surfaceLetter === " " ? "" : tile.surfaceLetter);
 
   return (
     <div
@@ -312,6 +319,8 @@ export default function App() {
   const [dismissedWin, setDismissedWin]   = useState(false);
   const [dismissedLoss, setDismissedLoss] = useState(false);
   const [hardMode, setHardMode]           = useState(false);
+  const [startAppearSet,     setStartAppearSet]     = useState(new Set());
+  const [startAnimatingSet,  setStartAnimatingSet]  = useState(new Set());
 
   const { cols } = calcLayout(SURFACE);
   const completeRows  = Math.floor(SURFACE.length / cols);
@@ -398,7 +407,7 @@ export default function App() {
     setTiles(buildTiles(SURFACE, HIDDEN, hardMode));
     setSelected(null); setGuess(""); setFinalScore(null);
     setWobble(false); setWon(false); setLost(false);
-    setWinFlipping(false); setMessage(""); setStarted(false); setHintUsed(false); setLockedShake(false); setDismissedWin(false); setDismissedLoss(false);
+    setWinFlipping(false); setMessage(""); setStarted(false); setHintUsed(false); setLockedShake(false); setDismissedWin(false); setDismissedLoss(false); setStartAppearSet(new Set()); setStartAnimatingSet(new Set());
   }
 
   function toggleHardMode() {
@@ -408,7 +417,19 @@ export default function App() {
     setTiles(buildTiles(SURFACE, HIDDEN, newMode));
   }
 
-  function startGame() { setStarted(true); }
+  function startGame() {
+    setStarted(true);
+    const revealOrder = tiles
+      .filter(t => t.isShaded || t.isHintRevealed)
+      .sort((a, b) => a.id - b.id)
+      .map(t => t.id);
+    revealOrder.forEach((id, idx) => {
+      const delay = idx * 600;
+      setTimeout(() => setStartAnimatingSet(prev => new Set([...prev, id])), delay);
+      setTimeout(() => setStartAppearSet(prev => new Set([...prev, id])), delay + 160);
+      setTimeout(() => setStartAnimatingSet(prev => { const s = new Set(prev); s.delete(id); return s; }), delay + 400);
+    });
+  }
 
   return (
     <>
@@ -630,7 +651,8 @@ export default function App() {
                   flipIdx={winFlipping ? flipTiles.findIndex(t => t.id === tile.id) : 0}
                   isLocked={revealsLeft === 0 || tiles.some(t => (t.id === tile.id - 1 || t.id === tile.id + 1) && t.isRevealed && !t.isShaded && !t.isHintRevealed)}
                   showHidden={lost && dismissedLoss}
-
+                  startAppearPending={(tile.isShaded || tile.isHintRevealed) && !startAppearSet.has(tile.id)}
+                  startAnimating={startAnimatingSet.has(tile.id)}
                 />
               ))}
             </div>
