@@ -16,6 +16,17 @@ function formatDate(iso) {
 const ACTIVE_DATE  = getActiveDate();
 const TODAY_PUZZLE = PUZZLES.find(p => p.date === ACTIVE_DATE) ?? PUZZLES[PUZZLES.length - 1];
 const ARCHIVE_LIST = PUZZLES.filter(p => p.date < ACTIVE_DATE).reverse();
+const HISTORY_KEY  = HISTORY_KEY;
+
+// Migrate history from any previous storage key
+(function migrate() {
+  const old = localStorage.getItem("doppel_history");
+  if (old && !localStorage.getItem(HISTORY_KEY)) {
+    localStorage.setItem(HISTORY_KEY, old);
+    localStorage.removeItem("doppel_history");
+  }
+})();
+
 const MAX_ROWS = 7;
 const MIN_COLS = 6;
 const GAP      = 4;
@@ -343,7 +354,7 @@ export default function App() {
   const [showArchive, setShowArchive]     = useState(false);
   const [activePuzzle, setActivePuzzle]   = useState(null);
   const [history, setHistory] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("coverup_history") || "{}"); }
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || "{}"); }
     catch { return {}; }
   });
   const [showStats, setShowStats] = useState(false);
@@ -469,7 +480,7 @@ export default function App() {
   function saveResult(date, result, reveals) {
     setHistory(prev => {
       const updated = { ...prev, [date]: { result, reveals, hardMode, hintUsed } };
-      localStorage.setItem("coverup_history", JSON.stringify(updated));
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
       return updated;
     });
   }
