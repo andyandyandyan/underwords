@@ -1,6 +1,21 @@
 import { useState, useEffect } from "react";
-import { SURFACE, HIDDEN, TITLE, DATE } from "./puzzle.js";
-import { ARCHIVE } from "./archive.js";
+import { PUZZLES } from "./puzzles.js";
+
+function getActiveDate() {
+  const now = new Date();
+  const et  = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+  if (et.getHours() < 3) et.setDate(et.getDate() - 1);
+  return `${et.getFullYear()}-${String(et.getMonth()+1).padStart(2,"0")}-${String(et.getDate()).padStart(2,"0")}`;
+}
+
+function formatDate(iso) {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "long", day: "numeric" });
+}
+
+const ACTIVE_DATE  = getActiveDate();
+const TODAY_PUZZLE = PUZZLES.find(p => p.date === ACTIVE_DATE) ?? PUZZLES[PUZZLES.length - 1];
+const ARCHIVE_LIST = PUZZLES.filter(p => p.date < ACTIVE_DATE).reverse();
 const MAX_ROWS = 7;
 const MIN_COLS = 6;
 const GAP      = 4;
@@ -303,7 +318,7 @@ function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocke
 }
 
 export default function App() {
-  const [tiles, setTiles]             = useState(buildTiles(SURFACE, HIDDEN));
+  const [tiles, setTiles]             = useState(buildTiles(TODAY_PUZZLE.surface, TODAY_PUZZLE.hidden));
   const [selected, setSelected]       = useState(null);
   const [guess, setGuess]             = useState("");
   const [wobble, setWobble]           = useState(false);
@@ -333,10 +348,10 @@ export default function App() {
   });
   const [showStats, setShowStats] = useState(false);
 
-  const pSurface = activePuzzle ? activePuzzle.surface : SURFACE;
-  const pHidden  = activePuzzle ? activePuzzle.hidden  : HIDDEN;
-  const pTitle   = activePuzzle ? activePuzzle.title   : TITLE;
-  const pDate    = activePuzzle ? activePuzzle.date    : DATE;
+  const pSurface = activePuzzle ? activePuzzle.surface : TODAY_PUZZLE.surface;
+  const pHidden  = activePuzzle ? activePuzzle.hidden  : TODAY_PUZZLE.hidden;
+  const pTitle   = activePuzzle ? activePuzzle.title   : TODAY_PUZZLE.title;
+  const pDate    = formatDate(activePuzzle ? activePuzzle.date : ACTIVE_DATE);
 
   const { cols } = calcLayout(pSurface);
   const completeRows  = Math.floor(pSurface.length / cols);
@@ -434,7 +449,7 @@ export default function App() {
   }
 
   function reset() {
-    setTiles(buildTiles(SURFACE, HIDDEN, hardMode));
+    setTiles(buildTiles(TODAY_PUZZLE.surface, TODAY_PUZZLE.hidden, hardMode));
     setSelected(null); setGuess(""); setFinalScore(null);
     setWobble(false); setWon(false); setLost(false);
     setWinFlipping(false); setMessage(""); setStarted(false); setHintUsed(false); setLockedShake(false);
@@ -468,8 +483,8 @@ export default function App() {
   }
 
   function playArchivePuzzle(entry) {
-    const surf = entry ? entry.surface : SURFACE;
-    const hidn = entry ? entry.hidden  : HIDDEN;
+    const surf = entry ? entry.surface : TODAY_PUZZLE.surface;
+    const hidn = entry ? entry.hidden  : TODAY_PUZZLE.hidden;
     setActivePuzzle(entry);
     setTiles(buildTiles(surf, hidn, false));
     setHardMode(false);
@@ -965,7 +980,7 @@ export default function App() {
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.4rem",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)"}}>Archive</div>
               <div style={{display:"flex",flexDirection:"column",gap:"0.5rem",overflowY:"auto",flex:1}}>
                 {/* Today's puzzle */}
-                {[{date: DATE, title: TITLE, entry: null}, ...ARCHIVE.map(e => ({...e, entry: e}))].map(({date, title, entry}) => {
+                {[{date: formatDate(ACTIVE_DATE), title: TODAY_PUZZLE.title, entry: null}, ...ARCHIVE_LIST.map(e => ({date: formatDate(e.date), title: e.title, entry: e}))].map(({date, title, entry}) => {
                   const h = history[date];
                   const badge = h
                     ? h.result === "won"
