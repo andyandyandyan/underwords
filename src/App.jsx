@@ -327,6 +327,10 @@ export default function App() {
   const [dismissedGaveUp, setDismissedGaveUp] = useState(false);
   const [showArchive, setShowArchive]     = useState(false);
   const [activePuzzle, setActivePuzzle]   = useState(null);
+  const [history, setHistory] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("doppel_history") || "{}"); }
+    catch { return {}; }
+  });
 
   const pSurface = activePuzzle ? activePuzzle.surface : SURFACE;
   const pHidden  = activePuzzle ? activePuzzle.hidden  : HIDDEN;
@@ -385,7 +389,7 @@ export default function App() {
       setFinalScore(currentScore);
       setWinFlipping(true);
       setTiles(prev => prev.map(t => ({...t, isRevealed: true})));
-      setTimeout(() => { setWon(true); setWinFlipping(false); }, flipTiles.length * 80 + 600);
+      setTimeout(() => { setWon(true); setWinFlipping(false); saveResult(pDate, "won", currentScore); }, flipTiles.length * 80 + 600);
     } else {
       setWobble(true);
       setMessage("Not quite…");
@@ -434,12 +438,20 @@ export default function App() {
     setTiles(buildTiles(pSurface, pHidden, newMode));
   }
 
+  function saveResult(date, result, reveals) {
+    setHistory(prev => {
+      const updated = { ...prev, [date]: { result, reveals, hardMode, hintUsed } };
+      localStorage.setItem("doppel_history", JSON.stringify(updated));
+      return updated;
+    });
+  }
+
   function handleGiveUp() {
     if (won || lost || gaveUp || winFlipping || gaveUpFlipping) return;
     setFinalScore(currentScore);
     setGaveUpFlipping(true);
     setTiles(prev => prev.map(t => ({...t, isRevealed: true})));
-    setTimeout(() => { setGaveUp(true); setGaveUpFlipping(false); }, flipTiles.length * 80 + 600);
+    setTimeout(() => { setGaveUp(true); setGaveUpFlipping(false); saveResult(pDate, "gaveUp", currentScore); }, flipTiles.length * 80 + 600);
   }
 
   function playArchivePuzzle(entry) {
@@ -851,27 +863,31 @@ export default function App() {
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.4rem",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)"}}>Archive</div>
               <div style={{display:"flex",flexDirection:"column",gap:"0.5rem",overflowY:"auto",flex:1}}>
                 {/* Today's puzzle */}
-                <div
-                  onClick={() => playArchivePuzzle(null)}
-                  style={{padding:"0.8rem 1rem",borderRadius:4,border:"1.5px solid var(--border-modal)",cursor:"pointer",transition:"border-color 0.15s,background 0.15s"}}
-                  onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--color-accent)";e.currentTarget.style.background="var(--bg-tile-default)"}}
-                  onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--border-modal)";e.currentTarget.style.background="transparent"}}
-                >
-                  <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.14em",textTransform:"uppercase",color:"var(--color-accent)",marginBottom:"0.25rem"}}>{DATE} · Today</div>
-                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:"0.9rem",fontStyle:"italic",color:"var(--color-page-title)"}}>{TITLE}</div>
-                </div>
-                {ARCHIVE.map(entry => (
-                  <div
-                    key={entry.date}
-                    onClick={() => playArchivePuzzle(entry)}
-                    style={{padding:"0.8rem 1rem",borderRadius:4,border:"1.5px solid var(--border-modal)",cursor:"pointer",transition:"border-color 0.15s,background 0.15s"}}
-                    onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--color-accent)";e.currentTarget.style.background="var(--bg-tile-default)"}}
-                    onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--border-modal)";e.currentTarget.style.background="transparent"}}
-                  >
-                    <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.14em",textTransform:"uppercase",color:"var(--color-dim)",marginBottom:"0.25rem"}}>{entry.date}</div>
-                    <div style={{fontFamily:"'Playfair Display',serif",fontSize:"0.9rem",fontStyle:"italic",color:"var(--color-page-title)"}}>{entry.title}</div>
-                  </div>
-                ))}
+                {[{date: DATE, title: TITLE, entry: null}, ...ARCHIVE.map(e => ({...e, entry: e}))].map(({date, title, entry}) => {
+                  const h = history[date];
+                  const badge = h
+                    ? h.result === "won"
+                      ? { label: h.reveals === 0 ? "perfect" : `${h.reveals} reveal${h.reveals !== 1 ? "s" : ""}`, color: "var(--color-tile-shaded)" }
+                      : { label: "gave up", color: "var(--color-lose)" }
+                    : null;
+                  return (
+                    <div
+                      key={date}
+                      onClick={() => playArchivePuzzle(entry)}
+                      style={{padding:"0.8rem 1rem",borderRadius:4,border:"1.5px solid var(--border-modal)",cursor:"pointer",transition:"border-color 0.15s,background 0.15s",display:"flex",alignItems:"center",justifyContent:"space-between",gap:"0.5rem"}}
+                      onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--color-accent)";e.currentTarget.style.background="var(--bg-tile-default)"}}
+                      onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--border-modal)";e.currentTarget.style.background="transparent"}}
+                    >
+                      <div>
+                        <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.14em",textTransform:"uppercase",color: entry ? "var(--color-dim)" : "var(--color-accent)",marginBottom:"0.25rem"}}>{date}{!entry ? " · Today" : ""}</div>
+                        <div style={{fontFamily:"'Playfair Display',serif",fontSize:"0.9rem",fontStyle:"italic",color:"var(--color-page-title)"}}>{title}</div>
+                      </div>
+                      {badge && (
+                        <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.55rem",letterSpacing:"0.1em",textTransform:"uppercase",color:badge.color,flexShrink:0,opacity:0.85}}>{badge.label}</div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
               <button onClick={() => setShowArchive(false)} style={{background:"transparent",border:"1.5px solid var(--border-secondary-btn)",color:"var(--color-secondary-btn)",fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.6rem",borderRadius:3,cursor:"pointer",flexShrink:0}}>
                 Close
