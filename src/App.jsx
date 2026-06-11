@@ -353,7 +353,7 @@ export default function App() {
     rows.push(tiles.slice(i, i + cols));
   }
 
-  const blockDailyStart = !activePuzzle && !!history[DATE];
+  const blockStart = !!history[pDate];
 
   const histResults  = Object.values(history);
   const statsPlayed  = histResults.length;
@@ -653,18 +653,18 @@ export default function App() {
                 </div>
               ))}
             </div>
-            {blockDailyStart ? (
+            {blockStart ? (
               <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.75rem",textAlign:"center"}}>
                 <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.12em",textTransform:"uppercase",color:"var(--color-dim)"}}>
                   you've already played today
                 </div>
-                <div style={{fontFamily:"'Playfair Display',serif",fontSize:"2rem",fontWeight:900,fontStyle:"italic",lineHeight:1,color: history[DATE].result === "won" ? "var(--color-accent)" : "var(--color-lose)"}}>
-                  {history[DATE].result === "won"
-                    ? (history[DATE].reveals === 0 ? "perfect" : `${history[DATE].reveals} reveal${history[DATE].reveals !== 1 ? "s" : ""}`)
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:"2rem",fontWeight:900,fontStyle:"italic",lineHeight:1,color: history[pDate].result === "won" ? "var(--color-accent)" : "var(--color-lose)"}}>
+                  {history[pDate].result === "won"
+                    ? (history[pDate].reveals === 0 ? "perfect" : `${history[pDate].reveals} reveal${history[pDate].reveals !== 1 ? "s" : ""}`)
                     : "didn't get it"}
                 </div>
                 <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.1em",color:"var(--color-dim)"}}>
-                  come back tomorrow for a new one
+                  {!activePuzzle ? "come back tomorrow for a new one" : "you've already played this one"}
                 </div>
                 <button onClick={() => setShowStats(true)} style={{background:"var(--color-accent)",border:"none",color:"var(--bg-primary-btn-text)",fontFamily:"'DM Mono',monospace",fontSize:"0.7rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.8rem 2.4rem",borderRadius:3,cursor:"pointer",fontWeight:500,marginTop:"0.25rem"}}>
                   My stats
