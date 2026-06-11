@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { SURFACE, HIDDEN, TITLE, DATE } from "./puzzle.js";
+import { ARCHIVE } from "./archive.js";
 const MAX_ROWS = 7;
 const MIN_COLS = 6;
 const GAP      = 4;
@@ -321,9 +322,19 @@ export default function App() {
   const [hardMode, setHardMode]           = useState(false);
   const [startAppearSet,     setStartAppearSet]     = useState(new Set());
   const [startAnimatingSet,  setStartAnimatingSet]  = useState(new Set());
+  const [gaveUp, setGaveUp]               = useState(false);
+  const [gaveUpFlipping, setGaveUpFlipping] = useState(false);
+  const [dismissedGaveUp, setDismissedGaveUp] = useState(false);
+  const [showArchive, setShowArchive]     = useState(false);
+  const [activePuzzle, setActivePuzzle]   = useState(null);
 
-  const { cols } = calcLayout(SURFACE);
-  const completeRows  = Math.floor(SURFACE.length / cols);
+  const pSurface = activePuzzle ? activePuzzle.surface : SURFACE;
+  const pHidden  = activePuzzle ? activePuzzle.hidden  : HIDDEN;
+  const pTitle   = activePuzzle ? activePuzzle.title   : TITLE;
+  const pDate    = activePuzzle ? activePuzzle.date    : DATE;
+
+  const { cols } = calcLayout(pSurface);
+  const completeRows  = Math.floor(pSurface.length / cols);
   const revealBudget  = completeRows * 2;
   const flipTiles     = tiles.filter(t => !t.isShaded);
   const currentScore  = calcScore(tiles);
@@ -338,7 +349,7 @@ export default function App() {
   }
 
   function handleTileClick(id) {
-    if (won || lost || winFlipping) return;
+    if (won || lost || gaveUp || winFlipping || gaveUpFlipping) return;
     const adjacentRevealed = tiles.some(t =>
       (t.id === id - 1 || t.id === id + 1) && t.isRevealed && !t.isShaded && !t.isHintRevealed
     );
@@ -353,7 +364,7 @@ export default function App() {
   }
 
   function confirmReveal() {
-    if (selected === null || won || lost || winFlipping || revealsLeft === 0) return;
+    if (selected === null || won || lost || gaveUp || winFlipping || gaveUpFlipping || revealsLeft === 0) return;
     setTiles(prev => prev.map(t => t.id === selected ? {...t, isRevealed: true} : t));
     setSelected(null);
   }
@@ -368,9 +379,9 @@ export default function App() {
   }
 
   function handleGuess() {
-    if (won || lost || winFlipping) return;
+    if (won || lost || gaveUp || winFlipping || gaveUpFlipping) return;
     const norm = guess.trim().replace(/\.+$/, "").trim().toUpperCase();
-    if (norm === HIDDEN) {
+    if (norm === pHidden) {
       setFinalScore(currentScore);
       setWinFlipping(true);
       setTiles(prev => prev.map(t => ({...t, isRevealed: true})));
@@ -386,13 +397,15 @@ export default function App() {
   async function handleShare() {
     let text;
     const hardLine = hardMode ? "\nhard mode" : "";
-    if (won) {
+    if (gaveUp) {
+      text = `doppel — ${pDate}: "${pTitle}"\ndidn't get it${hardLine}`;
+    } else if (won) {
       const revealText = finalScore === 0 ? "zero reveals" : `${finalScore} reveal${finalScore !== 1 ? "s" : ""}`;
       const prefix = finalScore === 0 ? "perfect · " : "";
       const emojiLine = ("🟪".repeat(finalScore) + (hintUsed ? " 🟥 hint taken" : "")).trim();
-      text = `doppel — ${DATE}: "${TITLE}"\n${prefix}${revealText}${emojiLine ? "\n" + emojiLine : ""}${hardLine}`;
+      text = `doppel — ${pDate}: "${pTitle}"\n${prefix}${revealText}${emojiLine ? "\n" + emojiLine : ""}${hardLine}`;
     } else {
-      text = `doppel — ${DATE}: "${TITLE}"\nno luck${hintUsed ? "\n🟥 hint taken" : ""}${hardLine}`;
+      text = `doppel — ${pDate}: "${pTitle}"\nno luck${hintUsed ? "\n🟥 hint taken" : ""}${hardLine}`;
     }
     if (navigator.share) {
       try { await navigator.share({ text }); } catch {}
@@ -407,14 +420,41 @@ export default function App() {
     setTiles(buildTiles(SURFACE, HIDDEN, hardMode));
     setSelected(null); setGuess(""); setFinalScore(null);
     setWobble(false); setWon(false); setLost(false);
-    setWinFlipping(false); setMessage(""); setStarted(false); setHintUsed(false); setLockedShake(false); setDismissedWin(false); setDismissedLoss(false); setStartAppearSet(new Set()); setStartAnimatingSet(new Set());
+    setWinFlipping(false); setMessage(""); setStarted(false); setHintUsed(false); setLockedShake(false);
+    setDismissedWin(false); setDismissedLoss(false);
+    setStartAppearSet(new Set()); setStartAnimatingSet(new Set());
+    setGaveUp(false); setGaveUpFlipping(false); setDismissedGaveUp(false);
+    setShowArchive(false); setActivePuzzle(null);
   }
 
   function toggleHardMode() {
     if (started) return;
     const newMode = !hardMode;
     setHardMode(newMode);
-    setTiles(buildTiles(SURFACE, HIDDEN, newMode));
+    setTiles(buildTiles(pSurface, pHidden, newMode));
+  }
+
+  function handleGiveUp() {
+    if (won || lost || gaveUp || winFlipping || gaveUpFlipping) return;
+    setFinalScore(currentScore);
+    setGaveUpFlipping(true);
+    setTiles(prev => prev.map(t => ({...t, isRevealed: true})));
+    setTimeout(() => { setGaveUp(true); setGaveUpFlipping(false); }, flipTiles.length * 80 + 600);
+  }
+
+  function playArchivePuzzle(entry) {
+    const surf = entry ? entry.surface : SURFACE;
+    const hidn = entry ? entry.hidden  : HIDDEN;
+    setActivePuzzle(entry);
+    setTiles(buildTiles(surf, hidn, false));
+    setHardMode(false);
+    setSelected(null); setGuess(""); setFinalScore(null);
+    setWobble(false); setWon(false); setLost(false);
+    setWinFlipping(false); setMessage(""); setStarted(false); setHintUsed(false); setLockedShake(false);
+    setDismissedWin(false); setDismissedLoss(false);
+    setStartAppearSet(new Set()); setStartAnimatingSet(new Set());
+    setGaveUp(false); setGaveUpFlipping(false); setDismissedGaveUp(false);
+    setShowArchive(false); setShowHelp(false);
   }
 
   function startGame() {
@@ -562,13 +602,13 @@ export default function App() {
               doppel
             </div>
             <div style={{fontFamily:"'DM Mono',monospace",fontSize:"clamp(1rem,4.5vw,1.5rem)",fontWeight:500,color:"var(--color-accent)",lineHeight:1.2,letterSpacing:"0.02em"}}>
-              {DATE}: "{TITLE}"
+              {pDate}: "{pTitle}"
             </div>
           </div>
         ) : (
           <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",width: tileSize * cols + GAP * (cols - 1)}}>
             <div style={{fontFamily:"'DM Mono',monospace",fontSize:"clamp(0.72rem,3.2vw,0.9rem)",fontWeight:500,color:"var(--color-accent)",letterSpacing:"0.02em",flexShrink:1,minWidth:0}}>
-              {DATE}: "{TITLE}"
+              {pDate}: "{pTitle}"
             </div>
             <div style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(0.72rem,3.2vw,0.9rem)",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)",opacity:0.45,userSelect:"none",flexShrink:0,marginLeft:"1rem"}}>
               doppel
@@ -580,7 +620,7 @@ export default function App() {
         {!started && !showHelp && (
           <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"2rem",animation:"fadeUp 0.4s ease both",padding:"0 1rem"}}>
             <div style={{display:"flex",flexWrap:"wrap",gap:"8px 10px",justifyContent:"center"}}>
-              {SURFACE.split(" ").map((word, wi) => (
+              {pSurface.split(" ").map((word, wi) => (
                 <div key={wi} style={{display:"flex",gap:4,flexShrink:0}}>
                   {word.split("").map((ch, ci) => (
                     <MiniTile key={ci} letter={ch} state="default" size={34}/>
@@ -621,7 +661,7 @@ export default function App() {
         )}
 
         {/* Score */}
-        {started && !won && !lost && (
+        {started && !won && !lost && !gaveUp && (
           <div style={{display:"flex",alignItems:"center",width: tileSize * cols + GAP * (cols - 1)}}>
             <div style={{display:"flex",alignItems:"center",gap:"1.6rem"}}>
               <div style={{display:"flex",alignItems:"center",gap:"0.5rem",fontSize:"0.72rem",letterSpacing:"0.18em",color:"var(--color-score-label)",textTransform:"uppercase"}}>
@@ -647,10 +687,10 @@ export default function App() {
                   isSelected={selected === tile.id}
                   onClick={() => handleTileClick(tile.id)}
                   size={tileSize}
-                  isWinFlipping={winFlipping}
-                  flipIdx={winFlipping ? flipTiles.findIndex(t => t.id === tile.id) : 0}
+                  isWinFlipping={winFlipping || gaveUpFlipping}
+                  flipIdx={(winFlipping || gaveUpFlipping) ? flipTiles.findIndex(t => t.id === tile.id) : 0}
                   isLocked={revealsLeft === 0 || tiles.some(t => (t.id === tile.id - 1 || t.id === tile.id + 1) && t.isRevealed && !t.isShaded && !t.isHintRevealed)}
-                  showHidden={lost && dismissedLoss}
+                  showHidden={(lost && dismissedLoss) || (gaveUp && dismissedGaveUp)}
                   startAppearPending={(tile.isShaded || tile.isHintRevealed) && !startAppearSet.has(tile.id)}
                   startAnimating={startAnimatingSet.has(tile.id)}
                 />
@@ -661,7 +701,7 @@ export default function App() {
         )}
 
         {/* Reveal button */}
-        {started && !won && !lost && (
+        {started && !won && !lost && !gaveUp && (
           <button onClick={confirmReveal} disabled={selected===null||winFlipping} style={{
             background:"transparent",
             border:`1.5px solid ${selected!==null?"var(--color-accent)":"var(--border-inactive)"}`,
@@ -677,7 +717,7 @@ export default function App() {
 
 
 {/* Guess input */}
-        {started && !won && !lost && (
+        {started && !won && !lost && !gaveUp && (
           <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.6rem",width: tileSize * cols + GAP * (cols - 1)}}>
             <div style={{display:"flex",gap:8,width:"100%"}}>
               <input value={guess} onChange={e=>setGuess(e.target.value)}
@@ -690,10 +730,10 @@ export default function App() {
               </button>
             </div>
             <div style={{display:"flex",gap:3,alignItems:"center",justifyContent:"center",height:"8px"}}>
-              {Array.from({length: HIDDEN.length}, (_, i) => {
+              {Array.from({length: pHidden.length}, (_, i) => {
                 const normLen = guess.trim().replace(/\.+$/, "").trim().length;
-                const over  = normLen > HIDDEN.length;
-                const exact = normLen === HIDDEN.length;
+                const over  = normLen > pHidden.length;
+                const exact = normLen === pHidden.length;
                 const bg = over  ? "#d63030"
                          : exact ? "#5aaa5a"
                          : i < guess.length ? "var(--color-accent)"
@@ -702,14 +742,17 @@ export default function App() {
               })}
             </div>
             <div style={{fontSize:"0.65rem",letterSpacing:"0.1em",color:"var(--color-error)",height:"1rem"}}>{message}</div>
+            <button onClick={handleGiveUp} style={{background:"transparent",border:"none",color:"var(--color-dim)",fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.12em",textTransform:"uppercase",padding:"0.3rem 0.8rem",borderRadius:3,cursor:"pointer",opacity:0.7,transition:"opacity 0.15s"}} onMouseEnter={e=>e.currentTarget.style.opacity="1"} onMouseLeave={e=>e.currentTarget.style.opacity="0.7"}>
+              I give up
+            </button>
           </div>
         )}
 
 
-        {/* Replay button after dismissed popup */}
-        {((won && dismissedWin) || (lost && dismissedLoss)) && (
-          <button onClick={reset} style={{background:"transparent",border:`1.5px solid var(--border-secondary-btn)`,color:"var(--color-secondary-btn)",fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.5rem 1.4rem",borderRadius:3,cursor:"pointer",animation:"fadeUp 0.3s ease both"}}>
-            New game
+        {/* Play archive button after dismissed popup */}
+        {((won && dismissedWin) || (lost && dismissedLoss) || (gaveUp && dismissedGaveUp)) && (
+          <button onClick={() => setShowArchive(true)} style={{background:"transparent",border:`1.5px solid var(--border-secondary-btn)`,color:"var(--color-secondary-btn)",fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.5rem 1.4rem",borderRadius:3,cursor:"pointer",animation:"fadeUp 0.3s ease both"}}>
+            Play archive
           </button>
         )}
 
@@ -725,19 +768,19 @@ export default function App() {
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:"0.95rem",fontStyle:"italic",color:"var(--color-dim)"}}>No more guesses.</div>
               <div style={{fontSize:"0.6rem",letterSpacing:"0.18em",color:"var(--color-dim)",textTransform:"uppercase"}}>The answer was</div>
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.6rem",fontWeight:700,fontStyle:"italic",color:"var(--color-lose)",letterSpacing:"0.02em",lineHeight:1.2}}>
-                {HIDDEN}
+                {pHidden}
               </div>
               {hintUsed && (
                 <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.12em",textTransform:"uppercase",color:"var(--color-dim)"}}>
                   hint taken
                 </div>
               )}
-              <div style={{display:"flex",gap:"0.6rem",marginTop:"0.6rem"}}>
-                <button onClick={handleShare} style={{background:"transparent",border:"1.5px solid var(--border-secondary-btn)",color:"var(--color-secondary-btn)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem 1.4rem",borderRadius:3,cursor:"pointer",fontWeight:500,transition:"all 0.15s"}}>
-                  {shareCopied ? "Copied!" : "Share"}
+              <div style={{display:"flex",flexDirection:"column",gap:"0.5rem",marginTop:"0.6rem",width:"100%"}}>
+                <button onClick={handleShare} style={{background:"var(--color-accent)",border:"none",color:"var(--bg-primary-btn-text)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.75rem 1.4rem",borderRadius:3,cursor:"pointer",fontWeight:500,transition:"opacity 0.15s"}} onMouseEnter={e=>e.currentTarget.style.opacity="0.85"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+                  {shareCopied ? "Copied!" : "Share result"}
                 </button>
-                <button onClick={reset} style={{background:"var(--color-accent)",border:"none",color:"var(--bg-primary-btn-text)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem 1.4rem",borderRadius:3,cursor:"pointer",fontWeight:500}}>
-                  Try again
+                <button onClick={() => setShowArchive(true)} style={{background:"transparent",border:"1.5px solid var(--border-secondary-btn)",color:"var(--color-secondary-btn)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem 1.4rem",borderRadius:3,cursor:"pointer",fontWeight:500,transition:"all 0.15s"}}>
+                  Play archive
                 </button>
               </div>
             </div>
@@ -762,14 +805,77 @@ export default function App() {
                   hint taken
                 </div>
               )}
-              <div style={{display:"flex",gap:"0.6rem",marginTop:"0.6rem"}}>
-                <button onClick={handleShare} style={{background:"transparent",border:"1.5px solid var(--border-secondary-btn)",color:"var(--color-secondary-btn)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem 1.4rem",borderRadius:3,cursor:"pointer",fontWeight:500,transition:"all 0.15s"}}>
-                  {shareCopied ? "Copied!" : "Share"}
+              <div style={{display:"flex",flexDirection:"column",gap:"0.5rem",marginTop:"0.6rem",width:"100%"}}>
+                <button onClick={handleShare} style={{background:"var(--color-accent)",border:"none",color:"var(--bg-primary-btn-text)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.75rem 1.4rem",borderRadius:3,cursor:"pointer",fontWeight:500,transition:"opacity 0.15s"}} onMouseEnter={e=>e.currentTarget.style.opacity="0.85"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+                  {shareCopied ? "Copied!" : "Share result"}
                 </button>
-                <button onClick={reset} style={{background:"var(--color-accent)",border:"none",color:"var(--bg-primary-btn-text)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem 1.4rem",borderRadius:3,cursor:"pointer",fontWeight:500}}>
-                  Play again
+                <button onClick={() => setShowArchive(true)} style={{background:"transparent",border:"1.5px solid var(--border-secondary-btn)",color:"var(--color-secondary-btn)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem 1.4rem",borderRadius:3,cursor:"pointer",fontWeight:500,transition:"all 0.15s"}}>
+                  Play archive
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Gave-up popup */}
+        {gaveUp && !dismissedGaveUp && (
+          <div onClick={() => setDismissedGaveUp(true)} style={{position:"fixed",inset:0,background:"var(--bg-overlay)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1.5rem",zIndex:100,cursor:"pointer"}}>
+            <div onClick={e => e.stopPropagation()} style={{background:"var(--bg-modal)",border:`1.5px solid var(--border-modal)`,borderRadius:8,padding:"2.4rem 2rem",maxWidth:300,width:"100%",display:"flex",flexDirection:"column",alignItems:"center",gap:"0.8rem",textAlign:"center",animation:"fadeUp 0.35s ease both"}}>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:"0.95rem",fontStyle:"italic",color:"var(--color-dim)"}}>not your day</div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:"3.2rem",fontWeight:900,fontStyle:"italic",color:"var(--color-lose)",lineHeight:1,letterSpacing:"-0.01em"}}>
+                didn't get it
+              </div>
+              <div style={{fontSize:"0.6rem",letterSpacing:"0.18em",color:"var(--color-dim)",textTransform:"uppercase"}}>The answer was</div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.4rem",fontWeight:700,fontStyle:"italic",color:"var(--color-page-title)",letterSpacing:"0.02em",lineHeight:1.2}}>
+                {pHidden}
+              </div>
+              {hintUsed && (
+                <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.12em",textTransform:"uppercase",color:"var(--color-dim)"}}>hint taken</div>
+              )}
+              <div style={{display:"flex",flexDirection:"column",gap:"0.5rem",marginTop:"0.6rem",width:"100%"}}>
+                <button onClick={handleShare} style={{background:"var(--color-accent)",border:"none",color:"var(--bg-primary-btn-text)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.75rem 1.4rem",borderRadius:3,cursor:"pointer",fontWeight:500,transition:"opacity 0.15s"}} onMouseEnter={e=>e.currentTarget.style.opacity="0.85"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+                  {shareCopied ? "Copied!" : "Share result"}
+                </button>
+                <button onClick={() => { setDismissedGaveUp(true); setShowArchive(true); }} style={{background:"transparent",border:"1.5px solid var(--border-secondary-btn)",color:"var(--color-secondary-btn)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem 1.4rem",borderRadius:3,cursor:"pointer",fontWeight:500,transition:"all 0.15s"}}>
+                  Play archive
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Archive modal */}
+        {showArchive && (
+          <div onClick={() => setShowArchive(false)} style={{position:"fixed",inset:0,background:"var(--bg-overlay)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1.5rem",zIndex:100}}>
+            <div onClick={e => e.stopPropagation()} style={{background:"var(--bg-modal)",border:`1.5px solid var(--border-modal)`,borderRadius:8,padding:"2rem 1.8rem",maxWidth:340,width:"100%",display:"flex",flexDirection:"column",gap:"1rem",maxHeight:"80vh",animation:"fadeUp 0.3s ease both"}}>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.4rem",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)"}}>Archive</div>
+              <div style={{display:"flex",flexDirection:"column",gap:"0.5rem",overflowY:"auto",flex:1}}>
+                {/* Today's puzzle */}
+                <div
+                  onClick={() => playArchivePuzzle(null)}
+                  style={{padding:"0.8rem 1rem",borderRadius:4,border:"1.5px solid var(--border-modal)",cursor:"pointer",transition:"border-color 0.15s,background 0.15s"}}
+                  onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--color-accent)";e.currentTarget.style.background="var(--bg-tile-default)"}}
+                  onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--border-modal)";e.currentTarget.style.background="transparent"}}
+                >
+                  <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.14em",textTransform:"uppercase",color:"var(--color-accent)",marginBottom:"0.25rem"}}>{DATE} · Today</div>
+                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:"0.9rem",fontStyle:"italic",color:"var(--color-page-title)"}}>{TITLE}</div>
+                </div>
+                {ARCHIVE.map(entry => (
+                  <div
+                    key={entry.date}
+                    onClick={() => playArchivePuzzle(entry)}
+                    style={{padding:"0.8rem 1rem",borderRadius:4,border:"1.5px solid var(--border-modal)",cursor:"pointer",transition:"border-color 0.15s,background 0.15s"}}
+                    onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--color-accent)";e.currentTarget.style.background="var(--bg-tile-default)"}}
+                    onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--border-modal)";e.currentTarget.style.background="transparent"}}
+                  >
+                    <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.14em",textTransform:"uppercase",color:"var(--color-dim)",marginBottom:"0.25rem"}}>{entry.date}</div>
+                    <div style={{fontFamily:"'Playfair Display',serif",fontSize:"0.9rem",fontStyle:"italic",color:"var(--color-page-title)"}}>{entry.title}</div>
+                  </div>
+                ))}
+              </div>
+              <button onClick={() => setShowArchive(false)} style={{background:"transparent",border:"1.5px solid var(--border-secondary-btn)",color:"var(--color-secondary-btn)",fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.6rem",borderRadius:3,cursor:"pointer",flexShrink:0}}>
+                Close
+              </button>
             </div>
           </div>
         )}
