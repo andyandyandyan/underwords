@@ -525,7 +525,7 @@ export default function App() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,900&family=DM+Mono:wght@300;400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap');
         :root {
           --bg-page: #faf9f6;
           --bg-tile-shaded-space: #d0ebd0;
@@ -649,7 +649,7 @@ export default function App() {
         {/* Header */}
         {!started ? (
           <div style={{textAlign:"center", padding:"0 1rem"}}>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(1.8rem,8vw,2.6rem)",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)",lineHeight:1,marginBottom:"0.5rem"}}>
+            <div style={{fontFamily:"'DM Serif Display',serif",fontSize:"clamp(1.8rem,8vw,2.6rem)",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)",lineHeight:1,marginBottom:"0.5rem"}}>
               coverup
             </div>
             <div style={{fontFamily:"'DM Mono',monospace",fontSize:"clamp(1rem,4.5vw,1.5rem)",fontWeight:500,color:"var(--color-accent)",lineHeight:1.2,letterSpacing:"0.02em"}}>
@@ -661,7 +661,7 @@ export default function App() {
             <div style={{fontFamily:"'DM Mono',monospace",fontSize:"clamp(0.72rem,3.2vw,0.9rem)",fontWeight:500,color:"var(--color-accent)",letterSpacing:"0.02em",flexShrink:1,minWidth:0}}>
               {pDate}: "{pTitle}"
             </div>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(0.72rem,3.2vw,0.9rem)",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)",opacity:0.45,userSelect:"none",flexShrink:0,marginLeft:"1rem"}}>
+            <div style={{fontFamily:"'DM Serif Display',serif",fontSize:"clamp(0.72rem,3.2vw,0.9rem)",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)",opacity:0.45,userSelect:"none",flexShrink:0,marginLeft:"1rem"}}>
               coverup
             </div>
           </div>
@@ -684,7 +684,7 @@ export default function App() {
                 <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.12em",textTransform:"uppercase",color:"var(--color-dim)"}}>
                   {!activePuzzle ? "you've already played today" : "you've already played this one"}
                 </div>
-                <div style={{fontFamily:"'Playfair Display',serif",fontSize:"2rem",fontWeight:900,fontStyle:"italic",lineHeight:1,color: history[pDate].result === "won" ? "var(--color-accent)" : "var(--color-lose)"}}>
+                <div style={{fontFamily:"'DM Serif Display',serif",fontSize:"2rem",fontWeight:900,fontStyle:"italic",lineHeight:1,color: history[pDate].result === "won" ? "var(--color-accent)" : "var(--color-lose)"}}>
                   {history[pDate].result === "won"
                     ? (history[pDate].reveals === 0 ? "perfect" : `${history[pDate].reveals} reveal${history[pDate].reveals !== 1 ? "s" : ""}`)
                     : "didn't get it"}
@@ -840,9 +840,9 @@ export default function App() {
         {lost && !dismissedLoss && (
           <div onClick={() => setDismissedLoss(true)} style={{position:"fixed",inset:0,background:"var(--bg-overlay)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1.5rem",zIndex:100,cursor:"pointer"}}>
             <div onClick={e => e.stopPropagation()} style={{background:"var(--bg-modal)",border:`1.5px solid var(--border-modal)`,borderRadius:8,padding:"2.4rem 2rem",maxWidth:300,width:"100%",display:"flex",flexDirection:"column",alignItems:"center",gap:"0.8rem",textAlign:"center",animation:"fadeUp 0.35s ease both"}}>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:"0.95rem",fontStyle:"italic",color:"var(--color-dim)"}}>No more guesses.</div>
+              <div style={{fontFamily:"'DM Serif Display',serif",fontSize:"0.95rem",fontStyle:"italic",color:"var(--color-dim)"}}>No more guesses.</div>
               <div style={{fontSize:"0.6rem",letterSpacing:"0.18em",color:"var(--color-dim)",textTransform:"uppercase"}}>The answer was</div>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.6rem",fontWeight:700,fontStyle:"italic",color:"var(--color-lose)",letterSpacing:"0.02em",lineHeight:1.2}}>
+              <div style={{fontFamily:"'DM Serif Display',serif",fontSize:"1.6rem",fontWeight:700,fontStyle:"italic",color:"var(--color-lose)",letterSpacing:"0.02em",lineHeight:1.2}}>
                 {pHidden}
               </div>
               {hintUsed && (
@@ -866,13 +866,13 @@ export default function App() {
         {won && finalScore !== null && !dismissedWin && (
           <div onClick={() => setDismissedWin(true)} style={{position:"fixed",inset:0,background:"var(--bg-overlay)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1.5rem",zIndex:100,cursor:"pointer"}}>
             <div onClick={e => e.stopPropagation()} style={{background:"var(--bg-modal)",border:`1.5px solid var(--border-modal)`,borderRadius:8,padding:"2.4rem 2rem",maxWidth:300,width:"100%",display:"flex",flexDirection:"column",alignItems:"center",gap:"0.8rem",textAlign:"center",animation:"fadeUp 0.35s ease both"}}>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:"0.95rem",fontStyle:"italic",color:"var(--color-dim)"}}>
+              <div style={{fontFamily:"'DM Serif Display',serif",fontSize:"0.95rem",fontStyle:"italic",color:"var(--color-dim)"}}>
                 You got it!
               </div>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:"3.2rem",fontWeight:900,fontStyle:"italic",color:"var(--color-accent)",lineHeight:1,letterSpacing:"-0.01em"}}>
+              <div style={{fontFamily:"'DM Serif Display',serif",fontSize:"3.2rem",fontWeight:900,fontStyle:"italic",color:"var(--color-accent)",lineHeight:1,letterSpacing:"-0.01em"}}>
                 {getRating(finalScore)}
               </div>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.4rem",fontWeight:700,color:"var(--color-page-title)",letterSpacing:"0.02em"}}>
+              <div style={{fontFamily:"'DM Serif Display',serif",fontSize:"1.4rem",fontWeight:700,color:"var(--color-page-title)",letterSpacing:"0.02em"}}>
                 {finalScore === 0 ? "zero reveals" : `${finalScore} reveal${finalScore !== 1 ? "s" : ""}`}
               </div>
               {hintUsed && (
@@ -899,12 +899,12 @@ export default function App() {
         {gaveUp && !dismissedGaveUp && (
           <div onClick={() => setDismissedGaveUp(true)} style={{position:"fixed",inset:0,background:"var(--bg-overlay)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1.5rem",zIndex:100,cursor:"pointer"}}>
             <div onClick={e => e.stopPropagation()} style={{background:"var(--bg-modal)",border:`1.5px solid var(--border-modal)`,borderRadius:8,padding:"2.4rem 2rem",maxWidth:300,width:"100%",display:"flex",flexDirection:"column",alignItems:"center",gap:"0.8rem",textAlign:"center",animation:"fadeUp 0.35s ease both"}}>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:"0.95rem",fontStyle:"italic",color:"var(--color-dim)"}}>not your day</div>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:"3.2rem",fontWeight:900,fontStyle:"italic",color:"var(--color-lose)",lineHeight:1,letterSpacing:"-0.01em"}}>
+              <div style={{fontFamily:"'DM Serif Display',serif",fontSize:"0.95rem",fontStyle:"italic",color:"var(--color-dim)"}}>not your day</div>
+              <div style={{fontFamily:"'DM Serif Display',serif",fontSize:"3.2rem",fontWeight:900,fontStyle:"italic",color:"var(--color-lose)",lineHeight:1,letterSpacing:"-0.01em"}}>
                 didn't get it
               </div>
               <div style={{fontSize:"0.6rem",letterSpacing:"0.18em",color:"var(--color-dim)",textTransform:"uppercase"}}>The answer was</div>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.4rem",fontWeight:700,fontStyle:"italic",color:"var(--color-page-title)",letterSpacing:"0.02em",lineHeight:1.2}}>
+              <div style={{fontFamily:"'DM Serif Display',serif",fontSize:"1.4rem",fontWeight:700,fontStyle:"italic",color:"var(--color-page-title)",letterSpacing:"0.02em",lineHeight:1.2}}>
                 {pHidden}
               </div>
               {hintUsed && (
@@ -929,13 +929,13 @@ export default function App() {
         {showStats && (
           <div onClick={() => setShowStats(false)} style={{position:"fixed",inset:0,background:"var(--bg-overlay)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1.5rem",zIndex:110}}>
             <div onClick={e => e.stopPropagation()} style={{background:"var(--bg-modal)",border:`1.5px solid var(--border-modal)`,borderRadius:8,padding:"2rem 1.8rem",maxWidth:300,width:"100%",display:"flex",flexDirection:"column",gap:"1.2rem",animation:"fadeUp 0.3s ease both"}}>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.4rem",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)"}}>My Stats</div>
+              <div style={{fontFamily:"'DM Serif Display',serif",fontSize:"1.4rem",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)"}}>My Stats</div>
 
               {/* Summary row */}
               <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",textAlign:"center",gap:"0.5rem"}}>
                 {[["played", statsPlayed], ["won", statsWon], ["gave up", statsGaveUp], ["perfect", statsPerfect]].map(([label, val]) => (
                   <div key={label}>
-                    <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.6rem",fontWeight:700,color:"var(--color-page-title)",lineHeight:1}}>{val}</div>
+                    <div style={{fontFamily:"'DM Serif Display',serif",fontSize:"1.6rem",fontWeight:700,color:"var(--color-page-title)",lineHeight:1}}>{val}</div>
                     <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.5rem",letterSpacing:"0.1em",textTransform:"uppercase",color:"var(--color-dim)",marginTop:"0.2rem"}}>{label}</div>
                   </div>
                 ))}
@@ -988,7 +988,7 @@ export default function App() {
         {showArchive && (
           <div onClick={() => setShowArchive(false)} style={{position:"fixed",inset:0,background:"var(--bg-overlay)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1.5rem",zIndex:100}}>
             <div onClick={e => e.stopPropagation()} style={{background:"var(--bg-modal)",border:`1.5px solid var(--border-modal)`,borderRadius:8,padding:"2rem 1.8rem",maxWidth:340,width:"100%",display:"flex",flexDirection:"column",gap:"1rem",maxHeight:"80vh",animation:"fadeUp 0.3s ease both"}}>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.4rem",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)"}}>Archive</div>
+              <div style={{fontFamily:"'DM Serif Display',serif",fontSize:"1.4rem",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)"}}>Archive</div>
               <div style={{display:"flex",flexDirection:"column",gap:"0.5rem",overflowY:"auto",flex:1}}>
                 {/* Today's puzzle */}
                 {[{date: formatDate(ACTIVE_DATE), title: TODAY_PUZZLE.title, entry: null}, ...ARCHIVE_LIST.map(e => ({date: formatDate(e.date), title: e.title, entry: e}))].map(({date, title, entry}) => {
@@ -1008,7 +1008,7 @@ export default function App() {
                     >
                       <div>
                         <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.14em",textTransform:"uppercase",color: entry ? "var(--color-dim)" : "var(--color-accent)",marginBottom:"0.25rem"}}>{date}{!entry ? " · Today" : ""}</div>
-                        <div style={{fontFamily:"'Playfair Display',serif",fontSize:"0.9rem",fontStyle:"italic",color:"var(--color-page-title)"}}>{title}</div>
+                        <div style={{fontFamily:"'DM Serif Display',serif",fontSize:"0.9rem",fontStyle:"italic",color:"var(--color-page-title)"}}>{title}</div>
                       </div>
                       {badge && (
                         <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.55rem",letterSpacing:"0.1em",textTransform:"uppercase",color:badge.color,flexShrink:0,opacity:0.85}}>{badge.label}</div>
@@ -1029,7 +1029,7 @@ export default function App() {
           <div onClick={()=>setShowHelp(false)} style={{position:"fixed",inset:0,background:"var(--bg-overlay)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1.5rem",animation:"fadeUp 0.2s ease both",zIndex:100}}>
             <div onClick={e=>e.stopPropagation()} style={{background:"var(--bg-modal)",border:`1.5px solid var(--border-modal)`,borderRadius:8,padding:"2rem 1.8rem",maxWidth:340,width:"100%",display:"flex",flexDirection:"column",gap:"1.1rem",maxHeight:"90vh",overflowY:"auto"}}>
 
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.5rem",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)"}}>How to play</div>
+              <div style={{fontFamily:"'DM Serif Display',serif",fontSize:"1.5rem",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)"}}>How to play</div>
 
               <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>Two phrases, one hiding beneath the other.</p>
 
