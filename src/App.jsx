@@ -663,9 +663,11 @@ export default function App() {
                     ? (history[pDate].reveals === 0 ? "perfect" : `${history[pDate].reveals} reveal${history[pDate].reveals !== 1 ? "s" : ""}`)
                     : "didn't get it"}
                 </div>
-                <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.1em",color:"var(--color-dim)"}}>
-                  {!activePuzzle ? "come back tomorrow for a new one" : "you've already played this one"}
-                </div>
+                {!activePuzzle && (
+                  <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.1em",color:"var(--color-dim)"}}>
+                    come back tomorrow for a new one
+                  </div>
+                )}
                 <button onClick={() => setShowStats(true)} style={{background:"var(--color-accent)",border:"none",color:"var(--bg-primary-btn-text)",fontFamily:"'DM Mono',monospace",fontSize:"0.7rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.8rem 2.4rem",borderRadius:3,cursor:"pointer",fontWeight:500,marginTop:"0.25rem"}}>
                   My stats
                 </button>
