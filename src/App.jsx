@@ -549,7 +549,7 @@ export default function App() {
           --color-dim: #aaaaaa;
           --bg-modal: #ffffff;
           --border-modal: #e0ddd8;
-          --color-modal-text: #666666;
+          --color-modal-text: #444444;
           --bg-input: #eeebe4;
           --border-input: #c4c0b8;
           --color-input: #1a1a1a;
@@ -587,7 +587,7 @@ export default function App() {
             --color-dim: #777777;
             --bg-modal: #161618;
             --border-modal: #2e2e32;
-            --color-modal-text: #888888;
+            --color-modal-text: #aaaaaa;
             --bg-input: #1c1c1e;
             --border-input: #2e2e32;
             --color-input: #f0ece4;
