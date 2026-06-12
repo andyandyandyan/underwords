@@ -16,11 +16,13 @@ function formatDate(iso) {
 const ACTIVE_DATE  = getActiveDate();
 const TODAY_PUZZLE = PUZZLES.find(p => p.date === ACTIVE_DATE) ?? PUZZLES[PUZZLES.length - 1];
 const ARCHIVE_LIST = PUZZLES.filter(p => p.date < ACTIVE_DATE).reverse();
-const HISTORY_KEY  = "uncover_history";
+// Deliberately name-independent so renaming the game never breaks history.
+// Do NOT rename this key.
+const HISTORY_KEY = "pg_history";
 
-// Migrate history from any previous storage key
+// Migrate from all previous key names (including broken "undefined" key from a past bug)
 (function migrate() {
-  for (const old of ["doppel_history", "uncover_history"]) {
+  for (const old of ["doppel_history", "coverup_history", "uncover_history", "undefined"]) {
     const data = localStorage.getItem(old);
     if (data && !localStorage.getItem(HISTORY_KEY)) {
       localStorage.setItem(HISTORY_KEY, data);
