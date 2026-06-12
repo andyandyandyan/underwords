@@ -266,7 +266,7 @@ function TypingAnimation() {
   );
 }
 
-function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocked, showHidden, startAppearPending, startAnimating }) {
+function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocked, showHidden, startAppearPending, startAnimating, revealStyle = "default" }) {
   const isSpace = tile.surfaceLetter === " ";
   const frozenLoss = showHidden && !tile.isShaded && !tile.isRevealed;
   const canClick = !tile.isShaded && !tile.isRevealed && !tile.isHintRevealed && !isLocked && !showHidden;
@@ -279,7 +279,12 @@ function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocke
     bg = isSpace ? "var(--bg-tile-shaded-space)" : "var(--bg-tile-shaded)";
     border = "var(--border-tile-shaded)"; color = "var(--color-tile-shaded)"; cursor = "default";
   } else if (tile.isRevealed) {
-    if (tile.isHintRevealed) {
+    if (revealStyle === "green") {
+      bg = isSpace ? "var(--bg-tile-shaded-space)" : "var(--bg-tile-shaded)";
+      border = "var(--border-tile-shaded)"; color = "var(--color-tile-shaded)";
+    } else if (revealStyle === "neutral") {
+      bg = "var(--bg-tile-default)"; border = "var(--border-tile-default)"; color = "var(--color-tile-default)";
+    } else if (tile.isHintRevealed) {
       bg = "var(--bg-tile-shaded-space)"; border = "var(--border-tile-shaded)"; color = "var(--color-tile-shaded)";
     } else {
       bg = isSpace ? "var(--bg-tile-revealed-space)" : "var(--bg-tile-revealed)";
@@ -768,6 +773,7 @@ export default function App() {
                   size={tileSize}
                   isWinFlipping={winFlipping || gaveUpFlipping}
                   flipIdx={(winFlipping || gaveUpFlipping) ? flipTiles.findIndex(t => t.id === tile.id) : 0}
+                  revealStyle={won || winFlipping ? "green" : gaveUp || gaveUpFlipping ? "neutral" : "default"}
                   isLocked={revealsLeft === 0 || tiles.some(t => (t.id === tile.id - 1 || t.id === tile.id + 1) && t.isRevealed && !t.isShaded && !t.isHintRevealed)}
                   showHidden={(lost && dismissedLoss) || (gaveUp && dismissedGaveUp)}
                   startAppearPending={(tile.isShaded || tile.isHintRevealed) && !startAppearSet.has(tile.id)}
