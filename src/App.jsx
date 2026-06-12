@@ -445,14 +445,14 @@ export default function App() {
     let text;
     const hardLine = hardMode ? "\nhard mode" : "";
     if (gaveUp) {
-      text = `coverup — ${pDate}: "${pTitle}"\ndidn't get it${hardLine}`;
+      text = `coverup — ${pDate}: "${pTitle}"\ndidn't get it${hardLine}\ncoverup.fyi`;
     } else if (won) {
       const revealText = finalScore === 0 ? "zero reveals" : `${finalScore} reveal${finalScore !== 1 ? "s" : ""}`;
       const prefix = finalScore === 0 ? "perfect · " : "";
       const emojiLine = ("🟪".repeat(finalScore) + (hintUsed ? " 🟥 hint taken" : "")).trim();
-      text = `coverup — ${pDate}: "${pTitle}"\n${prefix}${revealText}${emojiLine ? "\n" + emojiLine : ""}${hardLine}`;
+      text = `coverup — ${pDate}: "${pTitle}"\n${prefix}${revealText}${emojiLine ? "\n" + emojiLine : ""}${hardLine}\ncoverup.fyi`;
     } else {
-      text = `coverup — ${pDate}: "${pTitle}"\nno luck${hintUsed ? "\n🟥 hint taken" : ""}${hardLine}`;
+      text = `coverup — ${pDate}: "${pTitle}"\nno luck${hintUsed ? "\n🟥 hint taken" : ""}${hardLine}\ncoverup.fyi`;
     }
     if (navigator.share) {
       try { await navigator.share({ text }); } catch {}
