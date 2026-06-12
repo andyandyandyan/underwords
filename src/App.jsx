@@ -367,6 +367,8 @@ export default function App() {
     catch { return {}; }
   });
   const [showStats, setShowStats] = useState(false);
+  const [winRevealedSet,    setWinRevealedSet]    = useState(new Set());
+  const [giveUpRevealedSet, setGiveUpRevealedSet] = useState(new Set());
 
   const pSurface = activePuzzle ? activePuzzle.surface : TODAY_PUZZLE.surface;
   const pHidden  = activePuzzle ? activePuzzle.hidden  : TODAY_PUZZLE.hidden;
@@ -436,7 +438,12 @@ export default function App() {
     if (norm === pHidden) {
       setFinalScore(currentScore);
       setWinFlipping(true);
-      setTiles(prev => prev.map(t => ({...t, isRevealed: true})));
+      flipTiles.forEach((tile, flipIdx) => {
+        setTimeout(() => {
+          setTiles(prev => prev.map(t => t.id === tile.id ? {...t, isRevealed: true} : t));
+          setWinRevealedSet(prev => new Set([...prev, tile.id]));
+        }, flipIdx * 80 + 185);
+      });
       setTimeout(() => { setWon(true); setWinFlipping(false); saveResult(pDate, "won", currentScore); }, flipTiles.length * 80 + 600);
     } else {
       setWobble(true);
@@ -468,6 +475,28 @@ export default function App() {
     }
   }
 
+  async function handleShareFromHistory() {
+    const h = history[pDate];
+    if (!h) return;
+    const hardLine = h.hardMode ? "\nhard mode" : "";
+    let text;
+    if (h.result === "gaveUp") {
+      text = `coverup — ${pDate}: "${pTitle}"\ndidn't get it${hardLine}\ncoverup.fyi`;
+    } else {
+      const revealText = h.reveals === 0 ? "zero reveals" : `${h.reveals} reveal${h.reveals !== 1 ? "s" : ""}`;
+      const prefix = h.reveals === 0 ? "perfect · " : "";
+      const emojiLine = ("🟪".repeat(h.reveals) + (h.hintUsed ? " 🟥 hint taken" : "")).trim();
+      text = `coverup — ${pDate}: "${pTitle}"\n${prefix}${revealText}${emojiLine ? "\n" + emojiLine : ""}${hardLine}\ncoverup.fyi`;
+    }
+    if (navigator.share) {
+      try { await navigator.share({ text }); } catch {}
+    } else {
+      await navigator.clipboard.writeText(text);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    }
+  }
+
   function reset() {
     setTiles(buildTiles(TODAY_PUZZLE.surface, TODAY_PUZZLE.hidden, hardMode));
     setSelected(null); setGuess(""); setFinalScore(null);
@@ -477,6 +506,7 @@ export default function App() {
     setStartAppearSet(new Set()); setStartAnimatingSet(new Set());
     setGaveUp(false); setGaveUpFlipping(false); setDismissedGaveUp(false);
     setShowArchive(false); setActivePuzzle(null);
+    setWinRevealedSet(new Set()); setGiveUpRevealedSet(new Set());
   }
 
   function toggleHardMode() {
@@ -498,7 +528,12 @@ export default function App() {
     if (won || lost || gaveUp || winFlipping || gaveUpFlipping) return;
     setFinalScore(currentScore);
     setGaveUpFlipping(true);
-    setTiles(prev => prev.map(t => ({...t, isRevealed: true})));
+    flipTiles.forEach((tile, flipIdx) => {
+      setTimeout(() => {
+        setTiles(prev => prev.map(t => t.id === tile.id ? {...t, isRevealed: true} : t));
+        setGiveUpRevealedSet(prev => new Set([...prev, tile.id]));
+      }, flipIdx * 80 + 185);
+    });
     setTimeout(() => { setGaveUp(true); setGaveUpFlipping(false); saveResult(pDate, "gaveUp", currentScore); }, flipTiles.length * 80 + 600);
   }
 
@@ -515,6 +550,7 @@ export default function App() {
     setStartAppearSet(new Set()); setStartAnimatingSet(new Set());
     setGaveUp(false); setGaveUpFlipping(false); setDismissedGaveUp(false);
     setShowArchive(false); setShowHelp(false);
+    setWinRevealedSet(new Set()); setGiveUpRevealedSet(new Set());
   }
 
   function startGame() {
@@ -703,7 +739,10 @@ export default function App() {
                     come back tomorrow for a new one
                   </div>
                 )}
-                <button onClick={() => setShowStats(true)} style={{background:"var(--color-accent)",border:"none",color:"var(--bg-primary-btn-text)",fontFamily:"'DM Mono',monospace",fontSize:"0.7rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.8rem 2.4rem",borderRadius:3,cursor:"pointer",fontWeight:500,marginTop:"0.25rem"}}>
+                <button onClick={handleShareFromHistory} style={{background:"var(--color-accent)",border:"none",color:"var(--bg-primary-btn-text)",fontFamily:"'DM Mono',monospace",fontSize:"0.7rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.8rem 2.4rem",borderRadius:3,cursor:"pointer",fontWeight:500,marginTop:"0.25rem",transition:"opacity 0.15s"}} onMouseEnter={e=>e.currentTarget.style.opacity="0.85"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+                  {shareCopied ? "Copied!" : "Share result"}
+                </button>
+                <button onClick={() => setShowStats(true)} style={{background:"transparent",border:"1.5px solid var(--border-secondary-btn)",color:"var(--color-secondary-btn)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem 1.8rem",borderRadius:3,cursor:"pointer"}}>
                   My stats
                 </button>
                 <button onClick={() => setShowArchive(true)} style={{background:"transparent",border:"1.5px solid var(--border-secondary-btn)",color:"var(--color-secondary-btn)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem 1.8rem",borderRadius:3,cursor:"pointer"}}>
@@ -773,7 +812,7 @@ export default function App() {
                   size={tileSize}
                   isWinFlipping={winFlipping || gaveUpFlipping}
                   flipIdx={(winFlipping || gaveUpFlipping) ? flipTiles.findIndex(t => t.id === tile.id) : 0}
-                  revealStyle={won || winFlipping ? "green" : gaveUp || gaveUpFlipping ? "neutral" : "default"}
+                  revealStyle={winRevealedSet.has(tile.id) ? "green" : giveUpRevealedSet.has(tile.id) ? "neutral" : "default"}
                   isLocked={revealsLeft === 0 || tiles.some(t => (t.id === tile.id - 1 || t.id === tile.id + 1) && t.isRevealed && !t.isShaded && !t.isHintRevealed)}
                   showHidden={(lost && dismissedLoss) || (gaveUp && dismissedGaveUp)}
                   startAppearPending={(tile.isShaded || tile.isHintRevealed) && !startAppearSet.has(tile.id)}
