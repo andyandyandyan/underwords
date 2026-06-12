@@ -346,7 +346,8 @@ export default function App() {
   const [lost, setLost]               = useState(false);
   const [finalScore, setFinalScore]   = useState(null);
   const [winFlipping, setWinFlipping] = useState(false);
-  const [showHelp, setShowHelp]       = useState(true);
+  const [showHelp, setShowHelp]       = useState(() => !localStorage.getItem("pg_skip_intro"));
+  const [skipIntro, setSkipIntro]     = useState(() => !!localStorage.getItem("pg_skip_intro"));
   const [message, setMessage]         = useState("");
   const [started, setStarted]         = useState(false);
   const [hintUsed, setHintUsed]         = useState(false);
@@ -514,6 +515,13 @@ export default function App() {
     const newMode = !hardMode;
     setHardMode(newMode);
     setTiles(buildTiles(pSurface, pHidden, newMode));
+  }
+
+  function toggleSkipIntro() {
+    const next = !skipIntro;
+    setSkipIntro(next);
+    if (next) { localStorage.setItem("pg_skip_intro", "1"); }
+    else       { localStorage.removeItem("pg_skip_intro"); }
   }
 
   function saveResult(date, result, reveals) {
@@ -1092,7 +1100,13 @@ export default function App() {
 
               <TypingAnimation/>
 
-              <button onClick={()=>setShowHelp(false)} style={{background:"var(--color-accent)",border:"none",color:"var(--bg-primary-btn-text)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem",borderRadius:3,cursor:"pointer",fontWeight:500,marginTop:"0.2rem"}}>{started ? "Got it" : "Play"}</button>
+              <div onClick={toggleSkipIntro} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",userSelect:"none",paddingTop:"0.2rem"}}>
+                <span style={{fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.1em",color:"var(--color-dim)"}}>Don't show this again</span>
+                <div style={{width:34,height:18,borderRadius:9,background:skipIntro?"var(--color-accent)":"var(--border-tile-default)",position:"relative",transition:"background 0.2s",flexShrink:0,marginLeft:"0.75rem"}}>
+                  <div style={{position:"absolute",top:2,left:skipIntro?16:2,width:14,height:14,borderRadius:"50%",background:"#fff",transition:"left 0.2s",boxShadow:"0 1px 2px rgba(0,0,0,0.25)"}}/>
+                </div>
+              </div>
+              <button onClick={()=>setShowHelp(false)} style={{background:"var(--color-accent)",border:"none",color:"var(--bg-primary-btn-text)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem",borderRadius:3,cursor:"pointer",fontWeight:500}}>{started ? "Got it" : "Play"}</button>
             </div>
           </div>
         )}
