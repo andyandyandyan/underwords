@@ -445,14 +445,14 @@ export default function App() {
     let text;
     const hardLine = hardMode ? "\nhard mode" : "";
     if (gaveUp) {
-      text = `uncover — ${pDate}: "${pTitle}"\ndidn't get it${hardLine}`;
+      text = `coverup — ${pDate}: "${pTitle}"\ndidn't get it${hardLine}`;
     } else if (won) {
       const revealText = finalScore === 0 ? "zero reveals" : `${finalScore} reveal${finalScore !== 1 ? "s" : ""}`;
       const prefix = finalScore === 0 ? "perfect · " : "";
       const emojiLine = ("🟪".repeat(finalScore) + (hintUsed ? " 🟥 hint taken" : "")).trim();
-      text = `uncover — ${pDate}: "${pTitle}"\n${prefix}${revealText}${emojiLine ? "\n" + emojiLine : ""}${hardLine}`;
+      text = `coverup — ${pDate}: "${pTitle}"\n${prefix}${revealText}${emojiLine ? "\n" + emojiLine : ""}${hardLine}`;
     } else {
-      text = `uncover — ${pDate}: "${pTitle}"\nno luck${hintUsed ? "\n🟥 hint taken" : ""}${hardLine}`;
+      text = `coverup — ${pDate}: "${pTitle}"\nno luck${hintUsed ? "\n🟥 hint taken" : ""}${hardLine}`;
     }
     if (navigator.share) {
       try { await navigator.share({ text }); } catch {}
@@ -654,7 +654,7 @@ export default function App() {
         {!started ? (
           <div style={{textAlign:"center", padding:"0 1rem"}}>
             <div style={{fontFamily:"'DM Serif Display',serif",fontSize:"clamp(1.8rem,8vw,2.6rem)",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)",lineHeight:1,marginBottom:"0.5rem"}}>
-              uncover
+              coverup
             </div>
             <div style={{fontFamily:"'DM Mono',monospace",fontSize:"clamp(1rem,4.5vw,1.5rem)",fontWeight:500,color:"var(--color-accent)",lineHeight:1.2,letterSpacing:"0.02em"}}>
               {pDate}: "{pTitle}"
@@ -666,7 +666,7 @@ export default function App() {
               {pDate}: "{pTitle}"
             </div>
             <div style={{fontFamily:"'DM Serif Display',serif",fontSize:"clamp(0.72rem,3.2vw,0.9rem)",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)",opacity:0.45,userSelect:"none",flexShrink:0,marginLeft:"1rem"}}>
-              uncover
+              coverup
             </div>
           </div>
         )}
