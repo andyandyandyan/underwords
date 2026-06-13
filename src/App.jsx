@@ -424,9 +424,9 @@ export default function App() {
       (t.id === id - 1 || t.id === id + 1 || t.id === id - cols || t.id === id + cols) && t.isRevealed && !t.isShaded && !t.isHintRevealed
     );
     if (adjacentRevealed) {
-      const blocking = new Set(tiles
+      const blocking = new Set([id, ...tiles
         .filter(t => (t.id === id - 1 || t.id === id + 1 || t.id === id - cols || t.id === id + cols) && t.isRevealed && !t.isShaded && !t.isHintRevealed)
-        .map(t => t.id));
+        .map(t => t.id)]);
       setConflictIds(blocking);
       setMessage("You cannot reveal consecutive tiles.");
       setTimeout(() => { setConflictIds(new Set()); setMessage(""); }, 500);
@@ -520,7 +520,7 @@ export default function App() {
     setTiles(buildTiles(TODAY_PUZZLE.surface, TODAY_PUZZLE.hidden, hardMode));
     setSelected(null); setGuess(""); setFinalScore(null);
     setWobble(false); setWon(false); setLost(false);
-    setWinFlipping(false); setMessage(""); setStarted(false); setHintUsed(false); setLockedShake(false);
+    setWinFlipping(false); setMessage(""); setStarted(false); setHintUsed(false); setConflictIds(new Set());
     setDismissedWin(false); setDismissedLoss(false);
     setStartAppearSet(new Set()); setStartAnimatingSet(new Set());
     setGaveUp(false); setGaveUpFlipping(false); setDismissedGaveUp(false);
@@ -571,7 +571,7 @@ export default function App() {
     setHardMode(false);
     setSelected(null); setGuess(""); setFinalScore(null);
     setWobble(false); setWon(false); setLost(false);
-    setWinFlipping(false); setMessage(""); setStarted(false); setHintUsed(false); setLockedShake(false);
+    setWinFlipping(false); setMessage(""); setStarted(false); setHintUsed(false); setConflictIds(new Set());
     setDismissedWin(false); setDismissedLoss(false);
     setStartAppearSet(new Set()); setStartAnimatingSet(new Set());
     setGaveUp(false); setGaveUpFlipping(false); setDismissedGaveUp(false);
