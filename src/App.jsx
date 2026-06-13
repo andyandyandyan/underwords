@@ -271,8 +271,13 @@ function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocke
   const frozenLoss = showHidden && !tile.isShaded && !tile.isRevealed;
   const canClick = !tile.isShaded && !tile.isRevealed && !tile.isHintRevealed && !isLocked && !showHidden;
 
+  const isRevealedSpace = !startAppearPending && !startAnimating &&
+    tile.hiddenLetter === " " && (tile.isShaded || tile.isRevealed);
+
   let bg, border, color, cursor;
-  if (startAppearPending) {
+  if (isRevealedSpace) {
+    bg = "transparent"; border = "transparent"; color = "transparent"; cursor = "default";
+  } else if (startAppearPending) {
     bg = "var(--bg-tile-default)"; border = "var(--border-tile-default)";
     color = "var(--color-tile-default)"; cursor = "default";
   } else if (tile.isShaded) {
