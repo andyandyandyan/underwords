@@ -1101,7 +1101,7 @@ export default function App() {
 
               <SlidingAnimation/>
 
-              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>If they exist, characters that are the same in both phrases are revealed automatically, in green. Any spaces in the hidden phrase will also show at the start. Tap a tile to reveal one character of the hidden phrase, but choose wisely. You only get a limited number of reveals, and no two can touch.</p>
+              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>If they exist, characters that are the same in both phrases are revealed automatically, in green. Any spaces in the hidden phrase will also show at the start. Tap a tile to reveal a character, but choose wisely. You only get so many reveals, and no two can touch.</p>
 
               <TileRevealAnimation/>
 
