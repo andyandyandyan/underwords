@@ -277,10 +277,13 @@ function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocke
 
   const isRevealedSpace = !startAppearPending && !startAnimating &&
     tile.hiddenLetter === " " && (tile.isShaded || tile.isRevealed);
+  const isHardRevealedSpace = isRevealedSpace && tile.isRevealed && !tile.isHintRevealed && !tile.isShaded;
 
   let bg, border, color, cursor;
   if (isRevealedSpace) {
-    bg = "transparent"; border = "transparent"; color = "transparent"; cursor = "default";
+    bg = "transparent";
+    border = isHardRevealedSpace ? "var(--border-tile-revealed)" : "transparent";
+    color = "transparent"; cursor = "default";
   } else if (startAppearPending) {
     bg = "var(--bg-tile-default)"; border = "var(--border-tile-default)";
     color = "var(--color-tile-default)"; cursor = "default";
@@ -340,6 +343,7 @@ function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocke
         transition: "background 0.15s,border-color 0.15s,transform 0.12s,box-shadow 0.15s",
         boxShadow: isSelected ? "0 0 0 2px rgba(201,169,110,0.25)" : "none",
         transform: isSelected ? "translateY(-3px)" : "none",
+        opacity: isHardRevealedSpace ? 0.35 : 1,
         ...animStyle,
       }}
     >{letter}</div>
