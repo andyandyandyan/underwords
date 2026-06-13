@@ -75,6 +75,8 @@ function MiniTile({ letter, state, size, animating }) {
     bg = "var(--bg-tile-revealed)"; border = "var(--border-tile-revealed)"; color = "var(--color-tile-revealed)";
   } else if (state === "hint") {
     bg = "var(--bg-tile-revealed-space)"; border = "var(--border-tile-revealed)"; color = "var(--color-tile-revealed)";
+  } else if (state === "space") {
+    bg = "transparent"; border = "transparent"; color = "transparent";
   } else if (state === "selected") {
     bg = "var(--bg-tile-selected)"; border = "var(--color-accent)"; color = "var(--color-tile-default)";
   } else {
@@ -191,10 +193,12 @@ function TileRevealAnimation() {
       {surf.split("").map((ch, i) => {
         const isGreen = greenSet.has(i);
         const isHint  = isGreen && i === HINT_IDX;
+        const isRevealedSpace = isHint && hidn[i] === " ";
         let state = "default";
-        if (isGreen)           state = "shaded";
-        else if (revealed.has(i)) state = "revealed";
-        else if (selected === i)  state = "selected";
+        if (isRevealedSpace)       state = "space";
+        else if (isGreen)          state = "shaded";
+        else if (revealed.has(i))  state = "revealed";
+        else if (selected === i)   state = "selected";
         const showHidden = isHint || revealed.has(i);
         return (
           <MiniTile
@@ -1093,15 +1097,15 @@ export default function App() {
 
               <div style={{fontFamily:"'DM Serif Display',serif",fontSize:"1.5rem",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)"}}>How to play</div>
 
-              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>Two phrases, one hiding beneath the other.</p>
+              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>In this puzzle there are two phrases, one covering the other. You must correctly guess the hidden one.</p>
 
               <SlidingAnimation/>
 
-              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>Shared characters and spaces, if they exist, are automatically revealed in green. Tap a tile to reveal one character of the hidden phrase, but choose wisely. You only get a limited number of reveals, and no two can touch.</p>
+              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>If they exist, characters that are the same in both phrases are revealed automatically, in green. Any spaces in the hidden phrase will also show at the start. Tap a tile to reveal one character of the hidden phrase, but choose wisely. You only get a limited number of reveals, and no two can touch.</p>
 
               <TileRevealAnimation/>
 
-              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>Win by guessing the mystery phrase.</p>
+              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>When you're ready, take a guess.</p>
 
               <TypingAnimation/>
 
