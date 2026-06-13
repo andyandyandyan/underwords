@@ -415,7 +415,7 @@ export default function App() {
   function handleTileClick(id) {
     if (won || lost || gaveUp || winFlipping || gaveUpFlipping) return;
     const adjacentRevealed = tiles.some(t =>
-      (t.id === id - 1 || t.id === id + 1) && t.isRevealed && !t.isShaded && !t.isHintRevealed
+      (t.id === id - 1 || t.id === id + 1 || t.id === id - cols || t.id === id + cols) && t.isRevealed && !t.isShaded && !t.isHintRevealed
     );
     if (adjacentRevealed) {
       setLockedShake(true);
@@ -830,7 +830,7 @@ export default function App() {
                   isWinFlipping={winFlipping || gaveUpFlipping}
                   flipIdx={(winFlipping || gaveUpFlipping) ? flipTiles.findIndex(t => t.id === tile.id) : 0}
                   revealStyle={winRevealedSet.has(tile.id) ? "green" : giveUpRevealedSet.has(tile.id) ? "neutral" : "default"}
-                  isLocked={revealsLeft === 0 || tiles.some(t => (t.id === tile.id - 1 || t.id === tile.id + 1) && t.isRevealed && !t.isShaded && !t.isHintRevealed)}
+                  isLocked={revealsLeft === 0 || tiles.some(t => (t.id === tile.id - 1 || t.id === tile.id + 1 || t.id === tile.id - cols || t.id === tile.id + cols) && t.isRevealed && !t.isShaded && !t.isHintRevealed)}
                   showHidden={(lost && dismissedLoss) || (gaveUp && dismissedGaveUp)}
                   startAppearPending={(tile.isShaded || tile.isHintRevealed) && !startAppearSet.has(tile.id)}
                   startAnimating={startAnimatingSet.has(tile.id)}
