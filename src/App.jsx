@@ -1105,8 +1105,6 @@ export default function App() {
 
               <TileRevealAnimation/>
 
-              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>When you're ready, take a guess.</p>
-
               <TypingAnimation/>
 
               <div onClick={toggleSkipIntro} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",userSelect:"none",paddingTop:"0.2rem"}}>
