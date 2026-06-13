@@ -270,7 +270,7 @@ function TypingAnimation() {
   );
 }
 
-function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocked, isConflict, showHidden, startAppearPending, startAnimating, revealStyle = "default" }) {
+function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocked, conflictDir, showHidden, startAppearPending, startAnimating, revealStyle = "default" }) {
   const isSpace = tile.surfaceLetter === " ";
   const frozenLoss = showHidden && !tile.isShaded && !tile.isRevealed;
   const canClick = !tile.isShaded && !tile.isRevealed && !tile.isHintRevealed && !isLocked && !showHidden;
@@ -313,8 +313,8 @@ function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocke
     color = "var(--color-tile-default)"; cursor = canClick ? "pointer" : "default";
   }
 
-  const animStyle = isConflict ? {
-    animation: "shake 0.35s ease",
+  const animStyle = conflictDir ? {
+    animation: `${conflictDir === "y" ? "shakeY" : "shake"} 0.35s ease`,
   } : startAnimating ? {
     animation: "flipIn 0.4s ease both",
   } : isWinFlipping && !tile.isShaded ? {
@@ -367,7 +367,7 @@ export default function App() {
   const [started, setStarted]         = useState(false);
   const [hintUsed, setHintUsed]         = useState(false);
   const [shareCopied, setShareCopied]   = useState(false);
-  const [conflictIds, setConflictIds]   = useState(new Set());
+  const [conflictMap, setConflictMap]   = useState(new Map());
   const [dismissedWin, setDismissedWin]   = useState(false);
   const [dismissedLoss, setDismissedLoss] = useState(false);
   const [hardMode, setHardMode]           = useState(false);
@@ -424,12 +424,20 @@ export default function App() {
       (t.id === id - 1 || t.id === id + 1 || t.id === id - cols || t.id === id + cols) && t.isRevealed && !t.isShaded && !t.isHintRevealed
     );
     if (adjacentRevealed) {
-      const blocking = new Set([id, ...tiles
-        .filter(t => (t.id === id - 1 || t.id === id + 1 || t.id === id - cols || t.id === id + cols) && t.isRevealed && !t.isShaded && !t.isHintRevealed)
-        .map(t => t.id)]);
-      setConflictIds(blocking);
+      const blockers = tiles.filter(t =>
+        (t.id === id - 1 || t.id === id + 1 || t.id === id - cols || t.id === id + cols) && t.isRevealed && !t.isShaded && !t.isHintRevealed
+      );
+      const map = new Map();
+      let hasVertical = false;
+      for (const b of blockers) {
+        const isVertical = b.id === id - cols || b.id === id + cols;
+        map.set(b.id, isVertical ? "y" : "x");
+        if (isVertical) hasVertical = true;
+      }
+      map.set(id, hasVertical ? "y" : "x");
+      setConflictMap(map);
       setMessage("You cannot reveal consecutive tiles.");
-      setTimeout(() => { setConflictIds(new Set()); setMessage(""); }, 500);
+      setTimeout(() => { setConflictMap(new Map()); setMessage(""); }, 500);
       return;
     }
     if (revealsLeft === 0) return;
@@ -520,7 +528,7 @@ export default function App() {
     setTiles(buildTiles(TODAY_PUZZLE.surface, TODAY_PUZZLE.hidden, hardMode));
     setSelected(null); setGuess(""); setFinalScore(null);
     setWobble(false); setWon(false); setLost(false);
-    setWinFlipping(false); setMessage(""); setStarted(false); setHintUsed(false); setConflictIds(new Set());
+    setWinFlipping(false); setMessage(""); setStarted(false); setHintUsed(false); setConflictMap(new Map());
     setDismissedWin(false); setDismissedLoss(false);
     setStartAppearSet(new Set()); setStartAnimatingSet(new Set());
     setGaveUp(false); setGaveUpFlipping(false); setDismissedGaveUp(false);
@@ -571,7 +579,7 @@ export default function App() {
     setHardMode(false);
     setSelected(null); setGuess(""); setFinalScore(null);
     setWobble(false); setWon(false); setLost(false);
-    setWinFlipping(false); setMessage(""); setStarted(false); setHintUsed(false); setConflictIds(new Set());
+    setWinFlipping(false); setMessage(""); setStarted(false); setHintUsed(false); setConflictMap(new Map());
     setDismissedWin(false); setDismissedLoss(false);
     setStartAppearSet(new Set()); setStartAnimatingSet(new Set());
     setGaveUp(false); setGaveUpFlipping(false); setDismissedGaveUp(false);
@@ -684,6 +692,10 @@ export default function App() {
         @keyframes shake {
           0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)}
           75%{transform:translateX(4px)}
+        }
+        @keyframes shakeY {
+          0%,100%{transform:translateY(0)} 25%{transform:translateY(-4px)}
+          75%{transform:translateY(4px)}
         }
         @keyframes flipIn {
           0%{transform:rotateY(0)} 40%{transform:rotateY(90deg)}
@@ -839,7 +851,7 @@ export default function App() {
                   isWinFlipping={winFlipping || gaveUpFlipping}
                   flipIdx={(winFlipping || gaveUpFlipping) ? flipTiles.findIndex(t => t.id === tile.id) : 0}
                   revealStyle={winRevealedSet.has(tile.id) ? "green" : giveUpRevealedSet.has(tile.id) ? "neutral" : "default"}
-                  isConflict={conflictIds.has(tile.id)}
+                  conflictDir={conflictMap.get(tile.id) || null}
                   isLocked={revealsLeft === 0 || tiles.some(t => (t.id === tile.id - 1 || t.id === tile.id + 1 || t.id === tile.id - cols || t.id === tile.id + cols) && t.isRevealed && !t.isShaded && !t.isHintRevealed)}
                   showHidden={(lost && dismissedLoss) || (gaveUp && dismissedGaveUp)}
                   startAppearPending={(tile.isShaded || tile.isHintRevealed) && !startAppearSet.has(tile.id)}
