@@ -45,7 +45,7 @@ function calcLayout(surface) {
 
 function buildTiles(surface, hidden, hardMode = false) {
   return surface.split("").map((char, i) => {
-    const isShaded = char === hidden[i];
+    const isShaded = char === hidden[i] && char !== " ";
     const isAutoSpace = !hardMode && !isShaded && hidden[i] === " ";
     return {
       id: i,
