@@ -16,6 +16,49 @@ function formatDate(iso) {
 const ACTIVE_DATE  = getActiveDate();
 const TODAY_PUZZLE = PUZZLES.find(p => p.date === ACTIVE_DATE) ?? PUZZLES[PUZZLES.length - 1];
 const ARCHIVE_LIST = PUZZLES.filter(p => p.date < ACTIVE_DATE).reverse();
+
+const PROGRESS_KEY = "pg_progress";
+const HARD_MODE_KEY = "pg_hard_mode";
+
+function readProgress(dateKey) {
+  try { return JSON.parse(localStorage.getItem(PROGRESS_KEY) || "{}")[dateKey] || null; }
+  catch { return null; }
+}
+function writeProgress(dateKey, data) {
+  try {
+    const all = JSON.parse(localStorage.getItem(PROGRESS_KEY) || "{}");
+    all[dateKey] = data;
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify(all));
+  } catch {}
+}
+function clearProgress(dateKey) {
+  try {
+    const all = JSON.parse(localStorage.getItem(PROGRESS_KEY) || "{}");
+    delete all[dateKey];
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify(all));
+  } catch {}
+}
+
+function applyProgress(baseTiles, progress) {
+  if (!progress) return baseTiles;
+  let tiles = baseTiles.map(t =>
+    (progress.r || []).includes(t.id) ? { ...t, isRevealed: true } : t
+  );
+  if (progress.h) {
+    tiles = tiles.map(t =>
+      !t.isShaded && !t.isRevealed && t.hiddenLetter === " "
+        ? { ...t, isRevealed: true, isHintRevealed: true }
+        : t
+    );
+  }
+  return tiles;
+}
+
+const _initHardMode = !!localStorage.getItem(HARD_MODE_KEY);
+const _initProgress = readProgress(ACTIVE_DATE);
+const _initBaseTiles = buildTiles(TODAY_PUZZLE.surface, TODAY_PUZZLE.hidden, _initHardMode);
+const _initTiles = applyProgress(_initBaseTiles, _initProgress);
+const _hasInitProgress = !!_initProgress;
 // Deliberately name-independent so renaming the game never breaks history.
 // Do NOT rename this key.
 const HISTORY_KEY = "pg_history";
@@ -353,7 +396,7 @@ function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocke
 }
 
 export default function App() {
-  const [tiles, setTiles]             = useState(buildTiles(TODAY_PUZZLE.surface, TODAY_PUZZLE.hidden));
+  const [tiles, setTiles]             = useState(_initTiles);
   const [selected, setSelected]       = useState(null);
   const [guess, setGuess]             = useState("");
   const [wobble, setWobble]           = useState(false);
@@ -361,17 +404,19 @@ export default function App() {
   const [lost, setLost]               = useState(false);
   const [finalScore, setFinalScore]   = useState(null);
   const [winFlipping, setWinFlipping] = useState(false);
-  const [showHelp, setShowHelp]       = useState(() => !localStorage.getItem("pg_skip_intro"));
+  const [showHelp, setShowHelp]       = useState(() => !_hasInitProgress && !localStorage.getItem("pg_skip_intro"));
   const [skipIntro, setSkipIntro]     = useState(() => !!localStorage.getItem("pg_skip_intro"));
   const [message, setMessage]         = useState("");
-  const [started, setStarted]         = useState(false);
-  const [hintUsed, setHintUsed]         = useState(false);
+  const [started, setStarted]         = useState(_hasInitProgress);
+  const [hintUsed, setHintUsed]         = useState(() => !!(_initProgress && _initProgress.h));
   const [shareCopied, setShareCopied]   = useState(false);
   const [conflictMap, setConflictMap]   = useState(new Map());
   const [dismissedWin, setDismissedWin]   = useState(false);
   const [dismissedLoss, setDismissedLoss] = useState(false);
-  const [hardMode, setHardMode]           = useState(false);
-  const [startAppearSet,     setStartAppearSet]     = useState(new Set());
+  const [hardMode, setHardMode]           = useState(_initHardMode);
+  const [startAppearSet,     setStartAppearSet]     = useState(() =>
+    _hasInitProgress ? new Set(_initBaseTiles.filter(t => t.isShaded || t.isHintRevealed).map(t => t.id)) : new Set()
+  );
   const [startAnimatingSet,  setStartAnimatingSet]  = useState(new Set());
   const [gaveUp, setGaveUp]               = useState(false);
   const [gaveUpFlipping, setGaveUpFlipping] = useState(false);
@@ -446,7 +491,11 @@ export default function App() {
 
   function confirmReveal() {
     if (selected === null || won || lost || gaveUp || winFlipping || gaveUpFlipping || revealsLeft === 0) return;
-    setTiles(prev => prev.map(t => t.id === selected ? {...t, isRevealed: true} : t));
+    const revealedId = selected;
+    setTiles(prev => prev.map(t => t.id === revealedId ? {...t, isRevealed: true} : t));
+    const progressKey = activePuzzle ? activePuzzle.date : ACTIVE_DATE;
+    const prev = readProgress(progressKey) || { r: [], h: hintUsed };
+    writeProgress(progressKey, { ...prev, r: [...(prev.r || []), revealedId] });
     setSelected(null);
   }
 
@@ -456,6 +505,9 @@ export default function App() {
         ? { ...t, isRevealed: true, isHintRevealed: true }
         : t
     ));
+    const progressKey = activePuzzle ? activePuzzle.date : ACTIVE_DATE;
+    const prev = readProgress(progressKey) || { r: [] };
+    writeProgress(progressKey, { ...prev, h: true });
     setHintUsed(true);
   }
 
@@ -540,6 +592,8 @@ export default function App() {
     if (started) return;
     const newMode = !hardMode;
     setHardMode(newMode);
+    if (newMode) localStorage.setItem(HARD_MODE_KEY, "1");
+    else localStorage.removeItem(HARD_MODE_KEY);
     setTiles(buildTiles(pSurface, pHidden, newMode));
   }
 
@@ -551,6 +605,7 @@ export default function App() {
   }
 
   function saveResult(date, result, reveals) {
+    clearProgress(activePuzzle ? activePuzzle.date : ACTIVE_DATE);
     setHistory(prev => {
       const updated = { ...prev, [date]: { result, reveals, hardMode, hintUsed } };
       localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
@@ -574,14 +629,22 @@ export default function App() {
   function playArchivePuzzle(entry) {
     const surf = entry ? entry.surface : TODAY_PUZZLE.surface;
     const hidn = entry ? entry.hidden  : TODAY_PUZZLE.hidden;
+    const dateKey = entry ? entry.date : ACTIVE_DATE;
+    const savedHardMode = !!localStorage.getItem(HARD_MODE_KEY);
+    const progress = readProgress(dateKey);
+    const baseTiles = buildTiles(surf, hidn, savedHardMode);
+    const restoredTiles = applyProgress(baseTiles, progress);
+    const hasProgress = !!progress;
     setActivePuzzle(entry);
-    setTiles(buildTiles(surf, hidn, false));
-    setHardMode(false);
+    setHardMode(savedHardMode);
+    setTiles(restoredTiles);
     setSelected(null); setGuess(""); setFinalScore(null);
     setWobble(false); setWon(false); setLost(false);
-    setWinFlipping(false); setMessage(""); setStarted(false); setHintUsed(false); setConflictMap(new Map());
+    setWinFlipping(false); setMessage("");
+    setStarted(hasProgress); setHintUsed(!!(progress && progress.h)); setConflictMap(new Map());
     setDismissedWin(false); setDismissedLoss(false);
-    setStartAppearSet(new Set()); setStartAnimatingSet(new Set());
+    setStartAppearSet(hasProgress ? new Set(baseTiles.filter(t => t.isShaded || t.isHintRevealed).map(t => t.id)) : new Set());
+    setStartAnimatingSet(new Set());
     setGaveUp(false); setGaveUpFlipping(false); setDismissedGaveUp(false);
     setShowArchive(false); setShowHelp(false);
     setWinRevealedSet(new Set()); setGiveUpRevealedSet(new Set());
