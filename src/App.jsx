@@ -423,6 +423,19 @@ export default function App() {
   const [showStats, setShowStats] = useState(false);
   const [winRevealedSet,    setWinRevealedSet]    = useState(new Set());
   const [giveUpRevealedSet, setGiveUpRevealedSet] = useState(new Set());
+  const [boardW,            setBoardW]            = useState(() => Math.min(window.innerWidth * 0.88, 560));
+
+  useEffect(() => {
+    let lastW = window.innerWidth;
+    function onResize() {
+      if (window.innerWidth !== lastW) {
+        lastW = window.innerWidth;
+        setBoardW(Math.min(window.innerWidth * 0.88, 560));
+      }
+    }
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const pSurface = activePuzzle ? activePuzzle.surface : TODAY_PUZZLE.surface;
   const pHidden  = activePuzzle ? activePuzzle.hidden  : TODAY_PUZZLE.hidden;
@@ -436,7 +449,6 @@ export default function App() {
   const currentScore  = calcScore(tiles);
   const revealsLeft   = finalScore !== null ? revealBudget - finalScore : revealBudget - currentScore;
 
-  const boardW   = Math.min(window.innerWidth * 0.88, 560);
   const tileSize = Math.floor((boardW - GAP * (cols - 1)) / cols);
 
   const rows = [];
@@ -448,11 +460,13 @@ export default function App() {
   const typeableSlotIds = tiles
     .filter(t => !t.isShaded && !t.isRevealed)
     .map(t => t.id);
-  const GUESS_GAP = 4;
+  const GUESS_GAP = 2;
   const guessHPad = 4;
   const guessAvailW = boardW - GUESS_GAP * (pHidden.length - 1) - guessHPad * 2;
-  const guessLetterW = Math.max(10, Math.floor(guessAvailW / pHidden.length));
-  const guessFontSize = Math.max(9, Math.round(guessLetterW * 0.72));
+  const guessLetterW = Math.max(13, Math.floor(guessAvailW / pHidden.length));
+  // Minimum 16px font prevents iOS Safari from auto-zooming on input focus,
+  // which was causing the board to resize and the screen to re-center.
+  const guessFontSize = Math.max(16, Math.round(guessLetterW * 0.72));
 
   function handleSlotChange(e, tileId) {
     const ch = e.target.value.toUpperCase().replace(/[^A-Z]/g, "") || " ";
@@ -1006,7 +1020,8 @@ export default function App() {
           <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.5rem",width: tileSize * cols + GAP * (cols - 1)}}>
             {/* Guess block: full phrase on one line, click any blank to type there */}
             <div style={{position:"relative",width:"100%"}}>
-              <div style={{width:"100%",background:"var(--bg-input)",border:`1.5px solid var(--border-input)`,borderRadius:3,padding:`0.65rem ${guessHPad}px`,display:"flex",gap:GUESS_GAP,alignItems:"center"}}>
+              <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+              <div style={{minWidth:"100%",width:"max-content",background:"var(--bg-input)",border:`1.5px solid var(--border-input)`,borderRadius:3,padding:`0.65rem ${guessHPad}px`,display:"flex",gap:GUESS_GAP,alignItems:"center"}}>
                 {tiles.map(tile => {
                   const isRev = tile.isShaded || tile.isRevealed;
                   // "appeared" = tile has finished its start animation (or was revealed mid-game, not via start anim)
@@ -1060,6 +1075,7 @@ export default function App() {
                     />
                   );
                 })}
+              </div>
               </div>
               {winFlipping && (
                 <div style={{position:"absolute",right:-28,top:"50%",transform:"translateY(-50%)",fontSize:"1.1rem",color:"var(--border-tile-shaded)",fontWeight:700,pointerEvents:"none"}}>✓</div>
