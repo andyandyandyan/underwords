@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { PUZZLES } from "./puzzles.js";
 
 function getActiveDate() {
@@ -110,36 +110,39 @@ function getRating(reveals) {
   return "nice!";
 }
 
-function MiniTile({ letter, state, size, animating }) {
-  let bg, border, color;
-  if (state === "shaded") {
-    bg = "var(--bg-tile-shaded)"; border = "var(--border-tile-shaded)"; color = "var(--color-tile-shaded)";
-  } else if (state === "revealed") {
-    bg = "var(--bg-tile-revealed)"; border = "var(--border-tile-revealed)"; color = "var(--color-tile-revealed)";
-  } else if (state === "hint") {
-    bg = "var(--bg-tile-revealed-space)"; border = "var(--border-tile-revealed)"; color = "var(--color-tile-revealed)";
-  } else if (state === "space") {
-    bg = "transparent"; border = "transparent"; color = "transparent";
-  } else if (state === "selected") {
-    bg = "var(--bg-tile-selected)"; border = "var(--color-accent)"; color = "var(--color-tile-default)";
-  } else {
-    bg = "var(--bg-tile-default)"; border = "var(--border-tile-default)"; color = "var(--color-tile-default)";
-  }
+function MiniTile({ letter, hiddenLetter, state, size }) {
+  const isOval = state === "shaded" || state === "revealed" || state === "space" || state === "hint";
+  const ovalLetter = hiddenLetter !== undefined ? hiddenLetter : letter;
+  const T = "0.25s ease";
   return (
-    <div style={{
-      width: size, height: Math.round(size * 1.15),
-      display: "flex", alignItems: "center", justifyContent: "center",
-      borderRadius: 3,
-      background: bg, border: `1.5px solid ${border}`, color,
-      fontFamily: "'DM Mono',monospace",
-      fontSize: size * 0.4, fontWeight: 500,
-      userSelect: "none", flexShrink: 0,
-      transform: state === "selected" ? "translateY(-2px)" : "none",
-      boxShadow: state === "selected" ? "0 0 0 2px rgba(201,169,110,0.25)" : "none",
-      transition: "background 0.2s, border-color 0.15s, transform 0.12s",
-      animation: animating ? "flipIn 0.4s ease both" : "none",
-    }}>
-      {letter === " " ? "" : letter}
+    <div style={{ position: "relative", width: size, height: Math.round(size * 1.15), flexShrink: 0, userSelect: "none" }}>
+      {/* Oval layer */}
+      <div style={{
+        position: "absolute", inset: 0, borderRadius: "50%",
+        background: "var(--bg-tile-shaded)", border: "1.5px solid var(--border-tile-shaded)", color: "var(--color-tile-shaded)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontFamily: "'DM Mono',monospace", fontSize: size * 0.4, fontWeight: 500,
+        opacity: isOval ? 1 : 0,
+        transform: isOval ? "scale(1)" : "scale(0.65)",
+        transition: `opacity ${T}, transform ${T}`,
+      }}>
+        {ovalLetter === " " ? "" : ovalLetter}
+      </div>
+      {/* Surface layer */}
+      <div style={{
+        position: "absolute", inset: 0, borderRadius: 3,
+        background: state === "selected" ? "var(--bg-tile-selected)" : "var(--bg-tile-default)",
+        border: `1.5px solid ${state === "selected" ? "var(--color-accent)" : "var(--border-tile-default)"}`,
+        color: "var(--color-tile-default)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontFamily: "'DM Mono',monospace", fontSize: size * 0.4, fontWeight: 500,
+        transform: isOval ? "translateY(-38%) scale(0.78)" : state === "selected" ? "translateY(-2px)" : "none",
+        opacity: isOval ? 0 : 1,
+        boxShadow: state === "selected" ? "0 0 0 2px rgba(201,169,110,0.25)" : "none",
+        transition: `transform ${T}, opacity ${T}, background 0.2s, border-color 0.15s`,
+      }}>
+        {letter === " " ? "" : letter}
+      </div>
     </div>
   );
 }
@@ -183,7 +186,7 @@ function SlidingAnimation() {
         zIndex: 1,
         animation:"demoSlideUnder 4s ease-in-out infinite",
       }}>
-        {hidn.split("").map((ch, i) => <MiniTile key={i} letter={ch} state="default" size={size}/>)}
+        {hidn.split("").map((ch, i) => <MiniTile key={i} letter={ch} state="shaded" size={size}/>)}
       </div>
     </div>
   );
@@ -238,18 +241,17 @@ function TileRevealAnimation() {
         const isHint  = isGreen && i === HINT_IDX;
         const isRevealedSpace = isHint && hidn[i] === " ";
         let state = "default";
-        if (isRevealedSpace)       state = "space";
+        if (isRevealedSpace)       state = "shaded";
         else if (isGreen)          state = "shaded";
         else if (revealed.has(i))  state = "revealed";
         else if (selected === i)   state = "selected";
-        const showHidden = isHint || revealed.has(i);
         return (
           <MiniTile
             key={i}
-            letter={showHidden ? (hidn[i] === " " ? "" : hidn[i]) : ch}
+            letter={ch}
+            hiddenLetter={hidn[i]}
             state={state}
             size={size}
-            animating={justGreen === i || justRevealed === i}
           />
         );
       })}
@@ -314,91 +316,79 @@ function TypingAnimation() {
 }
 
 function Tile({ tile, isSelected, onClick, size, isWinFlipping, flipIdx, isLocked, conflictDir, showHidden, startAppearPending, startAnimating, revealStyle = "default" }) {
-  const isSpace = tile.surfaceLetter === " ";
   const frozenLoss = showHidden && !tile.isShaded && !tile.isRevealed;
   const canClick = !tile.isShaded && !tile.isRevealed && !tile.isHintRevealed && !isLocked && !showHidden;
 
-  const isRevealedSpace = !startAppearPending && !startAnimating &&
-    tile.hiddenLetter === " " && (tile.isShaded || tile.isRevealed);
-  const isHardRevealedSpace = isRevealedSpace && tile.isRevealed && !tile.isHintRevealed && !tile.isShaded;
+  // Oval shows when the hidden layer is exposed (revealed, shaded, or frozen post-loss)
+  const isOval = !startAppearPending && (tile.isShaded || tile.isRevealed || frozenLoss);
 
-  let bg, border, color, cursor;
-  if (isRevealedSpace) {
-    bg = "transparent";
-    border = isHardRevealedSpace ? "var(--border-tile-revealed)" : "transparent";
-    color = "transparent"; cursor = "default";
-  } else if (startAppearPending) {
-    bg = "var(--bg-tile-default)"; border = "var(--border-tile-default)";
-    color = "var(--color-tile-default)"; cursor = "default";
-  } else if (tile.isShaded) {
-    bg = isSpace ? "var(--bg-tile-shaded-space)" : "var(--bg-tile-shaded)";
-    border = "var(--border-tile-shaded)"; color = "var(--color-tile-shaded)"; cursor = "default";
-  } else if (tile.isRevealed) {
-    if (revealStyle === "green") {
-      bg = isSpace ? "var(--bg-tile-shaded-space)" : "var(--bg-tile-shaded)";
-      border = "var(--border-tile-shaded)"; color = "var(--color-tile-shaded)";
-    } else if (revealStyle === "neutral") {
-      bg = "var(--bg-tile-default)"; border = "var(--border-tile-default)"; color = "var(--color-tile-default)";
-    } else if (tile.isHintRevealed) {
-      bg = "var(--bg-tile-shaded-space)"; border = "var(--border-tile-shaded)"; color = "var(--color-tile-shaded)";
-    } else {
-      bg = isSpace ? "var(--bg-tile-revealed-space)" : "var(--bg-tile-revealed)";
-      border = isSelected ? "var(--color-accent)" : "var(--border-tile-revealed)";
-      color = "var(--color-tile-revealed)";
-    }
-    cursor = "default";
-  } else if (frozenLoss) {
-    bg = "var(--bg-tile-default)"; border = "var(--border-tile-default)";
-    color = "var(--color-page-title)"; cursor = "default";
-  } else {
-    bg = isSelected ? "var(--bg-tile-selected)" : "var(--bg-tile-default)";
-    border = isSelected ? "var(--color-accent)" : "var(--border-tile-default)";
-    color = "var(--color-tile-default)"; cursor = canClick ? "pointer" : "default";
-  }
+  const conflictAnimStyle = conflictDir
+    ? { animation: `${conflictDir === "y" ? "shakeY" : "shake"} 0.35s ease` }
+    : {};
 
-  const animStyle = conflictDir ? {
-    animation: `${conflictDir === "y" ? "shakeY" : "shake"} 0.35s ease`,
-  } : startAnimating ? {
-    animation: "flipIn 0.4s ease both",
-  } : isWinFlipping && !tile.isShaded ? {
-    animation: "flipIn 0.45s ease both",
-    animationDelay: `${flipIdx * 80}ms`,
-  } : {};
+  // Oval color: green by default, neutral for give-up or frozen reveals
+  const ovalGreen = revealStyle !== "neutral" && !frozenLoss;
+  const ovalBg     = ovalGreen ? "var(--bg-tile-shaded)"    : "var(--bg-tile-default)";
+  const ovalBorder = ovalGreen ? "var(--border-tile-shaded)" : "var(--border-tile-default)";
+  const ovalColor  = ovalGreen ? "var(--color-tile-shaded)"  : "var(--color-tile-default)";
 
-  const letter = startAppearPending
+  const hiddenLetterDisplay = tile.hiddenLetter === " " ? "" : tile.hiddenLetter;
+  const surfaceLetter = (!isOval || startAppearPending)
     ? (tile.surfaceLetter === " " ? "" : tile.surfaceLetter)
-    : (tile.isRevealed || frozenLoss)
-      ? (tile.hiddenLetter === " " ? "" : tile.hiddenLetter)
-      : (tile.surfaceLetter === " " ? "" : tile.surfaceLetter);
+    : "";
+
+  const T = "0.28s ease";
 
   return (
-    <div
-      onClick={!tile.isShaded && !tile.isRevealed && !tile.isHintRevealed ? onClick : undefined}
-      className={canClick && !isSelected ? "tile-hover" : ""}
-      style={{
-        width: size, height: size * 1.15,
-        flexShrink: 0,
+    <div style={{ position: "relative", width: size, height: size * 1.15, flexShrink: 0, ...conflictAnimStyle }}>
+
+      {/* Oval layer — hidden phrase, always underneath */}
+      <div style={{
+        position: "absolute", inset: "-2px", borderRadius: "50%",
+        background: ovalBg, border: `1.5px solid ${ovalBorder}`, color: ovalColor,
         display: "flex", alignItems: "center", justifyContent: "center",
-        borderRadius: 4,
-        background: bg, border: `1.5px solid ${border}`, color, cursor,
-        fontFamily: "'DM Mono',monospace",
-        fontSize: size * 0.42,
-        fontWeight: 500,
+        fontFamily: "'DM Mono',monospace", fontSize: size * 0.42, fontWeight: 500,
         userSelect: "none",
-        transition: "background 0.15s,border-color 0.15s,transform 0.12s,box-shadow 0.15s",
-        boxShadow: isSelected ? "0 0 0 2px rgba(201,169,110,0.25)" : "none",
-        transform: isSelected ? "translateY(-3px)" : "none",
-        opacity: isHardRevealedSpace ? 0.35 : 1,
-        ...animStyle,
-      }}
-    >{letter}</div>
+        opacity: isOval ? 1 : 0,
+        transform: isOval ? "scale(1)" : "scale(0.65)",
+        transition: `opacity ${T}, transform ${T}`,
+      }}>
+        {hiddenLetterDisplay}
+      </div>
+
+      {/* Surface layer — visible phrase, slides up and fades on reveal */}
+      <div
+        onClick={!tile.isShaded && !tile.isRevealed && !tile.isHintRevealed ? onClick : undefined}
+        className={canClick && !isSelected ? "tile-hover" : ""}
+        style={{
+          position: "absolute", inset: 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          borderRadius: 4,
+          background: isSelected ? "var(--bg-tile-selected)" : "var(--bg-tile-default)",
+          border: `1.5px solid ${isSelected ? "var(--color-accent)" : "var(--border-tile-default)"}`,
+          color: "var(--color-tile-default)",
+          cursor: canClick ? "pointer" : "default",
+          fontFamily: "'DM Mono',monospace", fontSize: size * 0.42, fontWeight: 500,
+          userSelect: "none",
+          boxShadow: isSelected ? "0 0 0 2px rgba(201,169,110,0.25)" : "none",
+          transform: isOval ? "translateY(-38%) scale(0.78)" : isSelected ? "translateY(-3px)" : "none",
+          opacity: isOval ? 0 : 1,
+          pointerEvents: isOval ? "none" : undefined,
+          transition: `transform ${T}, opacity ${T}, background 0.15s, border-color 0.15s, box-shadow 0.15s`,
+        }}
+      >
+        {surfaceLetter}
+      </div>
+    </div>
   );
 }
 
 export default function App() {
   const [tiles, setTiles]             = useState(_initTiles);
   const [selected, setSelected]       = useState(null);
-  const [guess, setGuess]             = useState("");
+  const [guess, setGuess]             = useState(() => " ".repeat(TODAY_PUZZLE.hidden.length));
+  const [focusedSlot, setFocusedSlot] = useState(null);
+  const slotRefs                       = useRef({});
   const [wobble, setWobble]           = useState(false);
   const [won, setWon]                 = useState(false);
   const [lost, setLost]               = useState(false);
@@ -415,6 +405,9 @@ export default function App() {
   const [dismissedLoss, setDismissedLoss] = useState(false);
   const [hardMode, setHardMode]           = useState(_initHardMode);
   const [startAppearSet,     setStartAppearSet]     = useState(() =>
+    _hasInitProgress ? new Set(_initBaseTiles.filter(t => t.isShaded || t.isHintRevealed).map(t => t.id)) : new Set()
+  );
+  const [startAnimIds,       setStartAnimIds]       = useState(() =>
     _hasInitProgress ? new Set(_initBaseTiles.filter(t => t.isShaded || t.isHintRevealed).map(t => t.id)) : new Set()
   );
   const [startAnimatingSet,  setStartAnimatingSet]  = useState(new Set());
@@ -451,6 +444,65 @@ export default function App() {
     rows.push(tiles.slice(i, i + cols));
   }
 
+  // All unrevealed positions including hidden spaces — cursor flows through them uniformly
+  const typeableSlotIds = tiles
+    .filter(t => !t.isShaded && !t.isRevealed)
+    .map(t => t.id);
+  const GUESS_GAP = 4;
+  const guessHPad = 4;
+  const guessAvailW = boardW - GUESS_GAP * (pHidden.length - 1) - guessHPad * 2;
+  const guessLetterW = Math.max(10, Math.floor(guessAvailW / pHidden.length));
+  const guessFontSize = Math.max(9, Math.round(guessLetterW * 0.72));
+
+  function handleSlotChange(e, tileId) {
+    const ch = e.target.value.toUpperCase().replace(/[^A-Z]/g, "") || " ";
+    setGuess(prev => {
+      const arr = prev.padEnd(pHidden.length, " ").split("");
+      arr[tileId] = ch;
+      return arr.join("");
+    });
+    if (ch !== " ") {
+      const nextId = typeableSlotIds.find(id => id > tileId);
+      if (nextId !== undefined) slotRefs.current[nextId]?.focus();
+    }
+  }
+
+  function handleSlotKeyDown(e, tileId) {
+    if (e.key === "Enter") { handleGuess(); return; }
+    if (e.key === " ") {
+      e.preventDefault();
+      const nextId = typeableSlotIds.find(id => id > tileId);
+      if (nextId !== undefined) slotRefs.current[nextId]?.focus();
+      return;
+    }
+    if (e.key === "Backspace") {
+      const filled = guess[tileId] && guess[tileId] !== " ";
+      if (!filled) {
+        e.preventDefault();
+        const prevId = [...typeableSlotIds].reverse().find(id => id < tileId);
+        if (prevId !== undefined) {
+          setGuess(prev => {
+            const arr = prev.padEnd(pHidden.length, " ").split("");
+            arr[prevId] = " ";
+            return arr.join("");
+          });
+          slotRefs.current[prevId]?.focus();
+        }
+      }
+      return;
+    }
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      const prevId = [...typeableSlotIds].reverse().find(id => id < tileId);
+      slotRefs.current[prevId]?.focus();
+    }
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      const nextId = typeableSlotIds.find(id => id > tileId);
+      slotRefs.current[nextId]?.focus();
+    }
+  }
+
   const blockStart = !!history[pDate];
 
   const histResults  = Object.values(history);
@@ -466,20 +518,15 @@ export default function App() {
   function handleTileClick(id) {
     if (won || lost || gaveUp || winFlipping || gaveUpFlipping) return;
     const adjacentRevealed = tiles.some(t =>
-      (t.id === id - 1 || t.id === id + 1 || t.id === id - cols || t.id === id + cols) && t.isRevealed && !t.isShaded && !t.isHintRevealed
+      ((t.id === id - 1 && id % cols !== 0) || (t.id === id + 1 && (id + 1) % cols !== 0)) && (t.isShaded || t.isRevealed)
     );
     if (adjacentRevealed) {
       const blockers = tiles.filter(t =>
-        (t.id === id - 1 || t.id === id + 1 || t.id === id - cols || t.id === id + cols) && t.isRevealed && !t.isShaded && !t.isHintRevealed
+        ((t.id === id - 1 && id % cols !== 0) || (t.id === id + 1 && (id + 1) % cols !== 0)) && (t.isShaded || t.isRevealed)
       );
       const map = new Map();
-      let hasVertical = false;
-      for (const b of blockers) {
-        const isVertical = b.id === id - cols || b.id === id + cols;
-        map.set(b.id, isVertical ? "y" : "x");
-        if (isVertical) hasVertical = true;
-      }
-      map.set(id, hasVertical ? "y" : "x");
+      for (const b of blockers) map.set(b.id, "x");
+      map.set(id, "x");
       setConflictMap(map);
       setMessage("You cannot reveal consecutive tiles.");
       setTimeout(() => { setConflictMap(new Map()); setMessage(""); }, 500);
@@ -513,8 +560,13 @@ export default function App() {
 
   function handleGuess() {
     if (won || lost || gaveUp || winFlipping || gaveUpFlipping) return;
-    const norm = guess.trim().replace(/\.+$/, "").trim().toUpperCase();
-    if (norm === pHidden) {
+    const fullGuess = tiles.map(t => {
+      if (t.hiddenLetter === " ") return " ";
+      if (t.isShaded || t.isRevealed) return t.hiddenLetter;
+      const ch = guess[t.id];
+      return ch && ch !== " " ? ch : " ";
+    }).join("");
+    if (fullGuess === pHidden) {
       setFinalScore(currentScore);
       setWinFlipping(true);
       flipTiles.forEach((tile, flipIdx) => {
@@ -528,8 +580,12 @@ export default function App() {
       setWobble(true);
       setMessage("Not quite…");
       setTimeout(() => { setWobble(false); setMessage(""); }, 1200);
+      setGuess(" ".repeat(pHidden.length));
+      const firstId = typeableSlotIds[0];
+      if (firstId !== undefined) setTimeout(() => slotRefs.current[firstId]?.focus(), 0);
+      return;
     }
-    setGuess("");
+    setGuess(" ".repeat(pHidden.length));
   }
 
   async function handleShare() {
@@ -578,11 +634,11 @@ export default function App() {
 
   function reset() {
     setTiles(buildTiles(TODAY_PUZZLE.surface, TODAY_PUZZLE.hidden, hardMode));
-    setSelected(null); setGuess(""); setFinalScore(null);
+    setSelected(null); setGuess(" ".repeat(TODAY_PUZZLE.hidden.length)); setFinalScore(null);
     setWobble(false); setWon(false); setLost(false);
     setWinFlipping(false); setMessage(""); setStarted(false); setHintUsed(false); setConflictMap(new Map());
     setDismissedWin(false); setDismissedLoss(false);
-    setStartAppearSet(new Set()); setStartAnimatingSet(new Set());
+    setStartAppearSet(new Set()); setStartAnimatingSet(new Set()); setStartAnimIds(new Set());
     setGaveUp(false); setGaveUpFlipping(false); setDismissedGaveUp(false);
     setShowArchive(false); setActivePuzzle(null);
     setWinRevealedSet(new Set()); setGiveUpRevealedSet(new Set());
@@ -638,12 +694,13 @@ export default function App() {
     setActivePuzzle(entry);
     setHardMode(savedHardMode);
     setTiles(restoredTiles);
-    setSelected(null); setGuess(""); setFinalScore(null);
+    setSelected(null); setGuess(" ".repeat(hidn.length)); setFinalScore(null);
     setWobble(false); setWon(false); setLost(false);
     setWinFlipping(false); setMessage("");
     setStarted(hasProgress); setHintUsed(!!(progress && progress.h)); setConflictMap(new Map());
     setDismissedWin(false); setDismissedLoss(false);
-    setStartAppearSet(hasProgress ? new Set(baseTiles.filter(t => t.isShaded || t.isHintRevealed).map(t => t.id)) : new Set());
+    const startSet = hasProgress ? new Set(baseTiles.filter(t => t.isShaded || t.isHintRevealed).map(t => t.id)) : new Set();
+    setStartAppearSet(startSet); setStartAnimIds(startSet);
     setStartAnimatingSet(new Set());
     setGaveUp(false); setGaveUpFlipping(false); setDismissedGaveUp(false);
     setShowArchive(false); setShowHelp(false);
@@ -656,6 +713,7 @@ export default function App() {
       .filter(t => t.isShaded || t.isHintRevealed)
       .sort((a, b) => a.id - b.id)
       .map(t => t.id);
+    setStartAnimIds(new Set(revealOrder));
     revealOrder.forEach((id, idx) => {
       const delay = idx * 600;
       setTimeout(() => setStartAnimatingSet(prev => new Set([...prev, id])), delay);
@@ -785,6 +843,7 @@ export default function App() {
           transform:translateY(-2px)!important;
           box-shadow:0 4px 16px rgba(201,169,110,0.15)!important;
         }
+        .guess-slot::placeholder { color: var(--border-tile-default); }
       `}</style>
 
       <div style={{
@@ -915,7 +974,7 @@ export default function App() {
                   flipIdx={(winFlipping || gaveUpFlipping) ? flipTiles.findIndex(t => t.id === tile.id) : 0}
                   revealStyle={winRevealedSet.has(tile.id) ? "green" : giveUpRevealedSet.has(tile.id) ? "neutral" : "default"}
                   conflictDir={conflictMap.get(tile.id) || null}
-                  isLocked={revealsLeft === 0 || tiles.some(t => (t.id === tile.id - 1 || t.id === tile.id + 1 || t.id === tile.id - cols || t.id === tile.id + cols) && t.isRevealed && !t.isShaded && !t.isHintRevealed)}
+                  isLocked={revealsLeft === 0 || tiles.some(t => ((t.id === tile.id - 1 && tile.id % cols !== 0) || (t.id === tile.id + 1 && (tile.id + 1) % cols !== 0)) && (t.isShaded || t.isRevealed))}
                   showHidden={(lost && dismissedLoss) || (gaveUp && dismissedGaveUp)}
                   startAppearPending={(tile.isShaded || tile.isHintRevealed) && !startAppearSet.has(tile.id)}
                   startAnimating={startAnimatingSet.has(tile.id)}
@@ -944,31 +1003,73 @@ export default function App() {
 
 {/* Guess input */}
         {started && !won && !lost && !gaveUp && (
-          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.6rem",width: tileSize * cols + GAP * (cols - 1)}}>
-            <div style={{display:"flex",gap:8,width:"100%"}}>
-              <input value={guess} onChange={e=>setGuess(e.target.value)}
-                onKeyDown={e=>e.key==="Enter"&&handleGuess()}
-                placeholder="Guess the hidden phrase…" disabled={winFlipping}
-                style={{flex:1,background:"var(--bg-input)",border:`1.5px solid var(--border-input)`,color:"var(--color-input)",fontFamily:"'DM Mono',monospace",fontSize:"0.85rem",padding:"0.65rem 0.9rem",borderRadius:3,outline:"none"}}
-              />
-              <button onClick={handleGuess} disabled={winFlipping} style={{background:"var(--color-accent)",border:"none",color:"var(--bg-primary-btn-text)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.15em",textTransform:"uppercase",padding:"0.65rem 1.2rem",borderRadius:3,cursor:"pointer",fontWeight:500}}>
-                Guess
-              </button>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.5rem",width: tileSize * cols + GAP * (cols - 1)}}>
+            {/* Guess block: full phrase on one line, click any blank to type there */}
+            <div style={{position:"relative",width:"100%"}}>
+              <div style={{width:"100%",background:"var(--bg-input)",border:`1.5px solid var(--border-input)`,borderRadius:3,padding:`0.65rem ${guessHPad}px`,display:"flex",gap:GUESS_GAP,alignItems:"center"}}>
+                {tiles.map(tile => {
+                  const isRev = tile.isShaded || tile.isRevealed;
+                  // "appeared" = tile has finished its start animation (or was revealed mid-game, not via start anim)
+                  const appeared = !startAnimIds.has(tile.id) || startAppearSet.has(tile.id);
+
+                  // Revealed but waiting for start animation: show blank underscore
+                  if (isRev && !appeared) {
+                    return <div key={tile.id} style={{width:guessLetterW,flexShrink:0,paddingBottom:2,borderBottom:`1.5px solid var(--border-tile-default)`,textAlign:"center",fontFamily:"'DM Mono',monospace",fontSize:guessFontSize,color:"var(--border-tile-default)",userSelect:"none"}}>_</div>;
+                  }
+
+                  if (tile.hiddenLetter === " ") {
+                    if (isRev) return <div key={tile.id} style={{width:guessLetterW,flexShrink:0}}/>;
+                    // Unrevealed space in hard mode: fully typeable — handleGuess ignores the value
+                  }
+                  const ch = isRev ? tile.hiddenLetter : (guess[tile.id] && guess[tile.id] !== " " ? guess[tile.id] : "");
+                  const green = winFlipping;
+                  const borderCol = green ? "var(--border-tile-shaded)"
+                    : isRev ? "var(--color-dim)"
+                    : ch ? "var(--color-accent)"
+                    : focusedSlot === tile.id ? "var(--color-accent)"
+                    : "var(--border-tile-default)";
+                  const textCol = green ? "var(--border-tile-shaded)"
+                    : isRev ? "var(--color-dim)"
+                    : "var(--color-accent)";
+                  if (isRev) {
+                    return (
+                      <div key={tile.id} style={{width:guessLetterW,flexShrink:0,paddingBottom:2,borderBottom:`1.5px solid ${borderCol}`,textAlign:"center",fontFamily:"'DM Mono',monospace",fontSize:guessFontSize,fontWeight:500,color:textCol,userSelect:"none"}}>
+                        {ch}
+                      </div>
+                    );
+                  }
+                  return (
+                    <input
+                      key={tile.id}
+                      ref={el => { slotRefs.current[tile.id] = el; }}
+                      className="guess-slot"
+                      type="text"
+                      maxLength={1}
+                      value={ch}
+                      disabled={winFlipping}
+                      placeholder="_"
+                      autoCapitalize="characters"
+                      autoCorrect="off"
+                      autoComplete="off"
+                      spellCheck={false}
+                      onChange={e => handleSlotChange(e, tile.id)}
+                      onKeyDown={e => handleSlotKeyDown(e, tile.id)}
+                      onFocus={e => { e.target.select(); setFocusedSlot(tile.id); }}
+                      onBlur={() => setFocusedSlot(null)}
+                      style={{width:guessLetterW,flexShrink:0,border:"none",borderBottom:`1.5px solid ${borderCol}`,borderRadius:0,background:"transparent",textAlign:"center",fontFamily:"'DM Mono',monospace",fontSize:guessFontSize,fontWeight:500,color:textCol,outline:"none",cursor:"text",padding:"0 0 2px"}}
+                    />
+                  );
+                })}
+              </div>
+              {winFlipping && (
+                <div style={{position:"absolute",right:-28,top:"50%",transform:"translateY(-50%)",fontSize:"1.1rem",color:"var(--border-tile-shaded)",fontWeight:700,pointerEvents:"none"}}>✓</div>
+              )}
             </div>
-            <div style={{display:"flex",gap:3,alignItems:"center",justifyContent:"center",height:"8px"}}>
-              {Array.from({length: pHidden.length}, (_, i) => {
-                const normLen = guess.trim().replace(/\.+$/, "").trim().length;
-                const over  = normLen > pHidden.length;
-                const exact = normLen === pHidden.length;
-                const bg = over  ? "#d63030"
-                         : exact ? "#5aaa5a"
-                         : i < guess.length ? "var(--color-accent)"
-                         : "var(--border-tile-default)";
-                return <div key={i} style={{width:9,height:2,borderRadius:1,background:bg,transition:"background 0.08s"}}/>;
-              })}
-            </div>
+            <button onClick={handleGuess} disabled={winFlipping} style={{background:"var(--color-accent)",border:"none",color:"var(--bg-primary-btn-text)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.15em",textTransform:"uppercase",padding:"0.65rem 1.2rem",borderRadius:3,cursor:"pointer",fontWeight:500}}>
+              Guess
+            </button>
             <div style={{fontSize:"0.65rem",letterSpacing:"0.1em",color:"var(--color-error)",height:"1rem"}}>{message}</div>
-            <button onClick={handleGiveUp} style={{background:"transparent",border:"none",color:"var(--color-dim)",fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.12em",textTransform:"uppercase",padding:"0.3rem 0.8rem",borderRadius:3,cursor:"pointer",opacity:0.7,transition:"opacity 0.15s"}} onMouseEnter={e=>e.currentTarget.style.opacity="1"} onMouseLeave={e=>e.currentTarget.style.opacity="0.7"}>
+            <button onClick={handleGiveUp} style={{background:"transparent",border:`1.5px solid var(--border-secondary-btn)`,color:"var(--color-secondary-btn)",fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.15em",textTransform:"uppercase",padding:"0.5rem 1.2rem",borderRadius:3,cursor:"pointer",fontWeight:500}}>
               I give up
             </button>
           </div>
@@ -1182,11 +1283,11 @@ export default function App() {
 
               <div style={{fontFamily:"'DM Serif Display',serif",fontSize:"1.5rem",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)"}}>How to play</div>
 
-              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>In this puzzle there are two phrases, one covering the other. You must correctly guess the hidden one.</p>
+              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>A mystery phrase is hiding beneath another of equal length. You must guess it.</p>
 
               <SlidingAnimation/>
 
-              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>If they exist, characters that are the same in both phrases are revealed automatically, in green. Any spaces in the hidden phrase will also show at the start. Tap a tile to reveal a character, but choose wisely. You only get so many reveals, and no two can touch.</p>
+              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>You will have help. Characters that are the same in both phrases are revealed automatically, as are spaces in the hidden phrase. You may also reveal characters by tapping tiles, but choose wisely. You only get so many reveals, and they can't touch anything green.</p>
 
               <TileRevealAnimation/>
 
