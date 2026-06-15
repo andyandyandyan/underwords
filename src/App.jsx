@@ -151,7 +151,7 @@ function MiniTile({ letter, hiddenLetter, state, size }) {
 function SlidingAnimation() {
   const surf   = "PINEAPPLE";
   const hidn   = "PALM TREE";
-  const size   = 23;
+  const size   = 26;
   const gap    = 2;
   const tileH  = Math.round(size * 1.15); // 26px
   const rowGap = 8;
@@ -198,7 +198,7 @@ function TileRevealAnimation() {
   const hidn     = "PALM TREE";
   const HINT_IDX = 4;
   const SEQ      = [2, 6];
-  const size     = 23;
+  const size     = 26;
   const gap      = 2;
 
   const [greenSet,     setGreenSet]     = useState(new Set());
@@ -297,7 +297,7 @@ function TypingAnimation() {
           const borderCol = done ? "var(--border-tile-shaded)" : isTyped ? "var(--color-accent)" : "var(--border-tile-default)";
           const textCol   = done ? "var(--border-tile-shaded)" : "var(--color-modal-text)";
           return (
-            <div key={i} style={{ flex:1, minWidth:0, minHeight:"1em", paddingBottom:2, borderBottom:`1.5px solid ${borderCol}`, textAlign:"center", fontFamily:"'DM Mono',monospace", fontSize:"0.75rem", fontWeight:500, color:textCol, userSelect:"none", transition:"color 0.2s, border-color 0.2s" }}>
+            <div key={i} style={{ flex:1, minWidth:0, minHeight:"1em", paddingBottom:2, borderBottom:`1.5px solid ${borderCol}`, textAlign:"center", fontFamily:"'DM Mono',monospace", fontSize:"0.83rem", fontWeight:500, color:textCol, userSelect:"none", transition:"color 0.2s, border-color 0.2s" }}>
               {isTyped ? ch : ""}
             </div>
           );
@@ -313,7 +313,7 @@ function TypingAnimation() {
 function AutoRevealAnimation() {
   const surf = "PINEAPPLE";
   const hidn = "PALM TREE";
-  const size = 23; const gap = 2;
+  const size = 26; const gap = 2;
   const [greenSet, setGreenSet] = useState(new Set());
 
   useEffect(() => {
@@ -345,7 +345,7 @@ function RevealDemoAnimation() {
   const hidn       = "PALM TREE";
   const INIT_GREEN = new Set([0, 4, 8]);
   const SEQ        = [2, 6];
-  const size = 23; const gap = 2;
+  const size = 26; const gap = 2;
   const [selected, setSelected] = useState(null);
   const [revealed, setRevealed] = useState(new Set());
 
@@ -1368,22 +1368,22 @@ export default function App() {
                   </div>
                 </div>
                 <div style={{fontFamily:"'DM Serif Display',serif",fontSize:"1.5rem",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)"}}>How to play</div>
-                <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace",margin:0}}>A mystery phrase is hiding beneath another of equal length. You must guess it.</p>
+                <p style={{fontSize:"0.88rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace",margin:0}}>A mystery phrase is hiding beneath another of equal length. You must guess it.</p>
                 <SlidingAnimation/>
               </>)}
 
               {helpPage === 1 && (<>
-                <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace",margin:0}}>You will have help. Characters that are the same in both phrases are revealed automatically, as are spaces in the hidden phrase.</p>
+                <p style={{fontSize:"0.88rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace",margin:0}}>You will have help. Characters that are the same in both phrases are revealed automatically, as are spaces in the hidden phrase.</p>
                 <AutoRevealAnimation/>
               </>)}
 
               {helpPage === 2 && (<>
-                <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace",margin:0}}>You may also reveal characters by tapping tiles, but choose wisely. You only get so many reveals, and they can't be next to green tiles.</p>
+                <p style={{fontSize:"0.88rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace",margin:0}}>You may also reveal characters by tapping tiles, but choose wisely. You only get so many reveals, and they can't be next to green tiles.</p>
                 <RevealDemoAnimation/>
               </>)}
 
               {helpPage === 3 && (<>
-                <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace",margin:0}}>When you're ready, guess the covered phrase.</p>
+                <p style={{fontSize:"0.88rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace",margin:0}}>When you're ready, guess the covered phrase.</p>
                 <TypingAnimation/>
                 <button onClick={() => { setShowHelp(false); setHelpPage(0); }} style={{background:"var(--color-accent)",border:"none",color:"var(--bg-primary-btn-text)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem",borderRadius:3,cursor:"pointer",fontWeight:500}}>{started ? "Got it" : "Play"}</button>
               </>)}
