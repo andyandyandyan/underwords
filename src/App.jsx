@@ -532,11 +532,11 @@ export default function App() {
   function handleTileClick(id) {
     if (won || lost || gaveUp || winFlipping || gaveUpFlipping) return;
     const adjacentRevealed = tiles.some(t =>
-      ((t.id === id - 1 && id % cols !== 0) || (t.id === id + 1 && (id + 1) % cols !== 0)) && (t.isShaded || t.isRevealed)
+      (t.id === id - 1 || t.id === id + 1) && (t.isShaded || t.isRevealed)
     );
     if (adjacentRevealed) {
       const blockers = tiles.filter(t =>
-        ((t.id === id - 1 && id % cols !== 0) || (t.id === id + 1 && (id + 1) % cols !== 0)) && (t.isShaded || t.isRevealed)
+        (t.id === id - 1 || t.id === id + 1) && (t.isShaded || t.isRevealed)
       );
       const map = new Map();
       for (const b of blockers) map.set(b.id, "x");
@@ -988,7 +988,7 @@ export default function App() {
                   flipIdx={(winFlipping || gaveUpFlipping) ? flipTiles.findIndex(t => t.id === tile.id) : 0}
                   revealStyle={winRevealedSet.has(tile.id) ? "green" : giveUpRevealedSet.has(tile.id) ? "neutral" : "default"}
                   conflictDir={conflictMap.get(tile.id) || null}
-                  isLocked={revealsLeft === 0 || tiles.some(t => ((t.id === tile.id - 1 && tile.id % cols !== 0) || (t.id === tile.id + 1 && (tile.id + 1) % cols !== 0)) && (t.isShaded || t.isRevealed))}
+                  isLocked={revealsLeft === 0 || tiles.some(t => (t.id === tile.id - 1 || t.id === tile.id + 1) && (t.isShaded || t.isRevealed))}
                   showHidden={(lost && dismissedLoss) || (gaveUp && dismissedGaveUp)}
                   startAppearPending={(tile.isShaded || tile.isHintRevealed) && !startAppearSet.has(tile.id)}
                   startAnimating={startAnimatingSet.has(tile.id)}
