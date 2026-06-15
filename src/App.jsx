@@ -261,56 +261,118 @@ function TileRevealAnimation() {
 
 // Animation 3: "palm tree" types into a guess bar
 function TypingAnimation() {
-  const text = "palm tree";
-  const [displayed, setDisplayed] = useState("");
+  const HIDN = "PALM TREE";
+
+  const [typed, setTyped] = useState(new Set());
+  const [done,  setDone]  = useState(false);
 
   useEffect(() => {
-    const ids = [];
-    let alive = true;
+    const ids = []; let alive = true;
     function sched(fn, ms) { const id = setTimeout(() => { if (alive) fn(); }, ms); ids.push(id); }
 
-    function start() {
-      for (let i = 0; i < text.length; i++) {
-        sched(() => setDisplayed(text.slice(0, i + 1)), i * 110);
-      }
-      sched(() => setDisplayed(""), text.length * 110 + 900);
-      sched(start, text.length * 110 + 1500);
+    function run() {
+      setTyped(new Set()); setDone(false);
+      const base = 400;
+      HIDN.split("").forEach((_, i) => {
+        sched(() => setTyped(s => new Set([...s, i])), base + i * 180);
+      });
+      const end = base + HIDN.length * 180 + 200;
+      sched(() => setDone(true), end);
+      sched(() => { setDone(false); setTyped(new Set()); }, end + 1500);
+      sched(run, end + 2100);
     }
 
-    sched(start, 700);
+    sched(run, 500);
+    return () => { alive = false; ids.forEach(clearTimeout); };
+  }, []);
+
+  const allFilled = typed.size === HIDN.length;
+
+  return (
+    <div style={{ display:"flex", gap:"0.5rem", alignItems:"center" }}>
+      <div style={{ flex:1, background:"var(--bg-input)", border:`1.5px solid var(--border-input)`, borderRadius:3, padding:"0.5rem 4px", display:"flex", gap:2, alignItems:"center" }}>
+        {HIDN.split("").map((ch, i) => {
+          if (ch === " ") return <div key={i} style={{ flex:1 }}/>;
+          const isTyped   = typed.has(i);
+          const borderCol = done ? "var(--border-tile-shaded)" : isTyped ? "var(--color-accent)" : "var(--border-tile-default)";
+          const textCol   = done ? "var(--border-tile-shaded)" : "var(--color-modal-text)";
+          return (
+            <div key={i} style={{ flex:1, minWidth:0, minHeight:"1em", paddingBottom:2, borderBottom:`1.5px solid ${borderCol}`, textAlign:"center", fontFamily:"'DM Mono',monospace", fontSize:"0.75rem", fontWeight:500, color:textCol, userSelect:"none", transition:"color 0.2s, border-color 0.2s" }}>
+              {isTyped ? ch : ""}
+            </div>
+          );
+        })}
+      </div>
+      <button disabled style={{ background:"var(--color-accent)", border:"none", color:"var(--bg-primary-btn-text)", fontFamily:"'DM Mono',monospace", fontSize:"0.55rem", letterSpacing:"0.12em", textTransform:"uppercase", padding:"0.5rem 0.6rem", borderRadius:3, cursor:"default", fontWeight:500, flexShrink:0, opacity:allFilled||done?1:0.5, transition:"opacity 0.2s" }}>Guess</button>
+      <div style={{ width:18, flexShrink:0, textAlign:"center", fontSize:"1rem", fontWeight:700, color:done?"var(--border-tile-shaded)":"transparent", transition:"color 0.2s" }}>✓</div>
+    </div>
+  );
+}
+
+// Screen 2: only the auto-reveals (P, E, space turning green one by one)
+function AutoRevealAnimation() {
+  const surf = "PINEAPPLE";
+  const hidn = "PALM TREE";
+  const size = 23; const gap = 2;
+  const [greenSet, setGreenSet] = useState(new Set());
+
+  useEffect(() => {
+    const ids = []; let alive = true;
+    function sched(fn, ms) { const id = setTimeout(() => { if (alive) fn(); }, ms); ids.push(id); }
+    function run() {
+      sched(() => setGreenSet(s => new Set([...s, 0])), 400);
+      sched(() => setGreenSet(s => new Set([...s, 8])), 1100);
+      sched(() => setGreenSet(s => new Set([...s, 4])), 1800);
+      sched(() => setGreenSet(new Set()), 3300);
+      sched(run, 3800);
+    }
+    sched(run, 500);
     return () => { alive = false; ids.forEach(clearTimeout); };
   }, []);
 
   return (
-    <div style={{ display:"flex", gap:8, width:"100%" }}>
-      <div style={{
-        flex: 1,
-        background: "var(--bg-input)",
-        border: "1.5px solid var(--border-input)",
-        color: "var(--color-input)",
-        fontFamily: "'DM Mono',monospace",
-        fontSize: "0.78rem",
-        padding: "0.45rem 0.7rem",
-        borderRadius: 3,
-        display: "flex", alignItems: "center",
-        minHeight: "2rem",
-      }}>
-        <span>{displayed}</span>
-        <span style={{ animation:"demoBlink 0.9s step-end infinite", marginLeft:1 }}>|</span>
-      </div>
-      <div style={{
-        background: "var(--color-accent)",
-        color: "var(--bg-primary-btn-text)",
-        fontFamily: "'DM Mono',monospace",
-        fontSize: "0.58rem",
-        letterSpacing: "0.12em",
-        textTransform: "uppercase",
-        padding: "0.45rem 0.8rem",
-        borderRadius: 3,
-        display: "flex", alignItems: "center",
-        opacity: 0.5,
-        userSelect: "none",
-      }}>Guess</div>
+    <div style={{ display:"flex", gap, justifyContent:"center" }}>
+      {surf.split("").map((ch, i) => (
+        <MiniTile key={i} letter={ch} hiddenLetter={hidn[i]} state={greenSet.has(i) ? "shaded" : "default"} size={size}/>
+      ))}
+    </div>
+  );
+}
+
+// Screen 3: P, E, space already green from the start; tiles 2 and 6 get selected then revealed
+function RevealDemoAnimation() {
+  const surf       = "PINEAPPLE";
+  const hidn       = "PALM TREE";
+  const INIT_GREEN = new Set([0, 4, 8]);
+  const SEQ        = [2, 6];
+  const size = 23; const gap = 2;
+  const [selected, setSelected] = useState(null);
+  const [revealed, setRevealed] = useState(new Set());
+
+  useEffect(() => {
+    const ids = []; let alive = true;
+    function sched(fn, ms) { const id = setTimeout(() => { if (alive) fn(); }, ms); ids.push(id); }
+    function run() {
+      sched(() => setSelected(SEQ[0]), 600);
+      sched(() => { setRevealed(s => new Set([...s, SEQ[0]])); setSelected(null); }, 1400);
+      sched(() => setSelected(SEQ[1]), 2500);
+      sched(() => { setRevealed(s => new Set([...s, SEQ[1]])); setSelected(null); }, 3300);
+      sched(() => { setRevealed(new Set()); setSelected(null); }, 4700);
+      sched(run, 5200);
+    }
+    sched(run, 700);
+    return () => { alive = false; ids.forEach(clearTimeout); };
+  }, []);
+
+  return (
+    <div style={{ display:"flex", gap, justifyContent:"center" }}>
+      {surf.split("").map((ch, i) => {
+        let state = "default";
+        if (INIT_GREEN.has(i))   state = "shaded";
+        else if (revealed.has(i)) state = "revealed";
+        else if (selected === i)  state = "selected";
+        return <MiniTile key={i} letter={ch} hiddenLetter={hidn[i]} state={state} size={size}/>;
+      })}
     </div>
   );
 }
@@ -395,6 +457,7 @@ export default function App() {
   const [finalScore, setFinalScore]   = useState(null);
   const [winFlipping, setWinFlipping] = useState(false);
   const [showHelp, setShowHelp]       = useState(() => !_hasInitProgress && !localStorage.getItem("pg_skip_intro"));
+  const [helpPage, setHelpPage]       = useState(0);
   const [skipIntro, setSkipIntro]     = useState(() => !!localStorage.getItem("pg_skip_intro"));
   const [message, setMessage]         = useState("");
   const [started, setStarted]         = useState(_hasInitProgress);
@@ -717,7 +780,7 @@ export default function App() {
     setStartAppearSet(startSet); setStartAnimIds(startSet);
     setStartAnimatingSet(new Set());
     setGaveUp(false); setGaveUpFlipping(false); setDismissedGaveUp(false);
-    setShowArchive(false); setShowHelp(false);
+    setShowArchive(false); setShowHelp(false); setHelpPage(0);
     setWinRevealedSet(new Set()); setGiveUpRevealedSet(new Set());
   }
 
@@ -1294,28 +1357,47 @@ export default function App() {
 
         {/* Help modal */}
         {showHelp && (
-          <div onClick={()=>setShowHelp(false)} style={{position:"fixed",inset:0,background:"var(--bg-overlay)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1.5rem",animation:"fadeUp 0.2s ease both",zIndex:100}}>
+          <div onClick={() => { setShowHelp(false); setHelpPage(0); }} style={{position:"fixed",inset:0,background:"var(--bg-overlay)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1.5rem",animation:"fadeUp 0.2s ease both",zIndex:100}}>
             <div onClick={e=>e.stopPropagation()} style={{background:"var(--bg-modal)",border:`1.5px solid var(--border-modal)`,borderRadius:8,padding:"2rem 1.8rem",maxWidth:340,width:"100%",display:"flex",flexDirection:"column",gap:"1.1rem",maxHeight:"90vh",overflowY:"auto"}}>
 
-              <div style={{fontFamily:"'DM Serif Display',serif",fontSize:"1.5rem",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)"}}>How to play</div>
-
-              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>A mystery phrase is hiding beneath another of equal length. You must guess it.</p>
-
-              <SlidingAnimation/>
-
-              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>You will have help. Characters that are the same in both phrases are revealed automatically, as are spaces in the hidden phrase. You may also reveal characters by tapping tiles, but choose wisely. You only get so many reveals, and they can't be next to green tiles.</p>
-
-              <TileRevealAnimation/>
-
-              <TypingAnimation/>
-
-              <div onClick={toggleSkipIntro} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",userSelect:"none",paddingTop:"0.2rem"}}>
-                <span style={{fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.1em",color:"var(--color-dim)"}}>Don't show this again</span>
-                <div style={{width:34,height:18,borderRadius:9,background:skipIntro?"var(--color-accent)":"var(--border-tile-default)",position:"relative",transition:"background 0.2s",flexShrink:0,marginLeft:"0.75rem"}}>
-                  <div style={{position:"absolute",top:2,left:skipIntro?16:2,width:14,height:14,borderRadius:"50%",background:"#fff",transition:"left 0.2s",boxShadow:"0 1px 2px rgba(0,0,0,0.25)"}}/>
+              {helpPage === 0 && (<>
+                <div onClick={toggleSkipIntro} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",userSelect:"none"}}>
+                  <span style={{fontFamily:"'DM Mono',monospace",fontSize:"0.6rem",letterSpacing:"0.1em",color:"var(--color-dim)"}}>Don't show this again</span>
+                  <div style={{width:34,height:18,borderRadius:9,background:skipIntro?"var(--color-accent)":"var(--border-tile-default)",position:"relative",transition:"background 0.2s",flexShrink:0,marginLeft:"0.75rem"}}>
+                    <div style={{position:"absolute",top:2,left:skipIntro?16:2,width:14,height:14,borderRadius:"50%",background:"#fff",transition:"left 0.2s",boxShadow:"0 1px 2px rgba(0,0,0,0.25)"}}/>
+                  </div>
                 </div>
+                <div style={{fontFamily:"'DM Serif Display',serif",fontSize:"1.5rem",fontWeight:900,fontStyle:"italic",color:"var(--color-page-title)"}}>How to play</div>
+                <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace",margin:0}}>A mystery phrase is hiding beneath another of equal length. You must guess it.</p>
+                <SlidingAnimation/>
+              </>)}
+
+              {helpPage === 1 && (<>
+                <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace",margin:0}}>You will have help. Characters that are the same in both phrases are revealed automatically, as are spaces in the hidden phrase.</p>
+                <AutoRevealAnimation/>
+              </>)}
+
+              {helpPage === 2 && (<>
+                <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace",margin:0}}>You may also reveal characters by tapping tiles, but choose wisely. You only get so many reveals, and they can't be next to green tiles.</p>
+                <RevealDemoAnimation/>
+              </>)}
+
+              {helpPage === 3 && (<>
+                <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace",margin:0}}>When you're ready, guess the covered phrase.</p>
+                <TypingAnimation/>
+                <button onClick={() => { setShowHelp(false); setHelpPage(0); }} style={{background:"var(--color-accent)",border:"none",color:"var(--bg-primary-btn-text)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem",borderRadius:3,cursor:"pointer",fontWeight:500}}>{started ? "Got it" : "Play"}</button>
+              </>)}
+
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <button onClick={() => setHelpPage(p => p - 1)} style={{background:"transparent",border:"none",color:helpPage===0?"transparent":"var(--color-accent)",pointerEvents:helpPage===0?"none":"auto",fontSize:"1.2rem",cursor:"pointer",padding:"0.1rem 0.3rem",lineHeight:1,fontFamily:"'DM Mono',monospace"}}>&#8592;</button>
+                <div style={{display:"flex",gap:"0.4rem",alignItems:"center"}}>
+                  {[0,1,2,3].map(i => (
+                    <div key={i} onClick={() => setHelpPage(i)} style={{width:i===helpPage?8:6,height:i===helpPage?8:6,borderRadius:"50%",background:i===helpPage?"var(--color-accent)":"var(--border-tile-default)",transition:"all 0.2s",cursor:"pointer"}}/>
+                  ))}
+                </div>
+                <button onClick={() => setHelpPage(p => p + 1)} style={{background:"transparent",border:"none",color:helpPage===3?"transparent":"var(--color-accent)",pointerEvents:helpPage===3?"none":"auto",fontSize:"1.2rem",cursor:"pointer",padding:"0.1rem 0.3rem",lineHeight:1,fontFamily:"'DM Mono',monospace"}}>&#8594;</button>
               </div>
-              <button onClick={()=>setShowHelp(false)} style={{background:"var(--color-accent)",border:"none",color:"var(--bg-primary-btn-text)",fontFamily:"'DM Mono',monospace",fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",padding:"0.7rem",borderRadius:3,cursor:"pointer",fontWeight:500}}>{started ? "Got it" : "Play"}</button>
+
             </div>
           </div>
         )}
