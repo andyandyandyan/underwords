@@ -1303,7 +1303,7 @@ export default function App() {
 
               <SlidingAnimation/>
 
-              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>You will have help. Characters that are the same in both phrases are revealed automatically, as are spaces in the hidden phrase. You may also reveal characters by tapping tiles, but choose wisely. You only get so many reveals, and they can't touch anything green.</p>
+              <p style={{fontSize:"0.8rem",lineHeight:1.7,color:"var(--color-modal-text)",fontFamily:"'DM Mono',monospace"}}>You will have help. Characters that are the same in both phrases are revealed automatically, as are spaces in the hidden phrase. You may also reveal characters by tapping tiles, but choose wisely. You only get so many reveals, and they can't be next to green tiles.</p>
 
               <TileRevealAnimation/>
 
